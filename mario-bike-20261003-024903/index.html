@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#65c9f4">
+  <title>Mario's Sunday Ride</title>
+  <style>
+    :root { --ink:#152238; --red:#e52521; --cream:#fff8df; --gold:#ffc928; }
+    * { box-sizing:border-box; }
+    html,body { height:100%; }
+    body {
+      margin:0; display:grid; place-items:center; overflow:hidden;
+      font-family:Impact,Haettenschweiler,"Arial Narrow Bold",system-ui,sans-serif;
+      background:#f4d6ad;
+      background-image:radial-gradient(#dfa974 1px,transparent 1px);
+      background-size:18px 18px;
+      color:var(--ink);
+    }
+    button { font:inherit; }
+    .game {
+      position:relative; width:min(1180px,96vw); aspect-ratio:16/9; max-height:94vh;
+      overflow:hidden; isolation:isolate; border:clamp(5px,1vw,11px) solid #fff8e8;
+      border-radius:clamp(18px,3vw,38px); background:#73d2f5;
+      box-shadow:0 10px 0 #c99061,0 30px 70px #713f2838;
+    }
+    .scene { position:absolute; inset:0; width:100%; height:100%; display:block; }
+    .hud { position:absolute; inset:clamp(14px,2.5vw,30px) clamp(14px,3vw,36px) auto; z-index:5; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; }
+    .title { color:white; line-height:.83; font-size:clamp(26px,5vw,68px); letter-spacing:.025em; transform:rotate(-2deg); text-shadow:0 4px 0 #9d1c19,4px 7px 0 #152238; }
+    .title small { display:block; margin:10px 0 0 5px; color:#fff5be; font:800 clamp(8px,1.1vw,14px)/1.2 system-ui,sans-serif; letter-spacing:.28em; text-shadow:1px 2px #152238; }
+    .scoreboard { display:flex; gap:10px; }
+    .pill { min-width:82px; padding:8px 13px; border:3px solid var(--ink); border-radius:14px; background:#fff8df; box-shadow:0 5px 0 var(--ink); text-align:center; font:900 clamp(9px,1vw,12px)/1 system-ui,sans-serif; }
+    .pill b { display:block; margin-top:5px; color:var(--red); font:900 clamp(18px,2vw,28px)/1 Impact,sans-serif; }
+    .controls { position:absolute; right:clamp(12px,2.7vw,32px); bottom:clamp(12px,2.5vw,28px); z-index:7; display:flex; gap:9px; }
+    .control { border:3px solid var(--ink); border-radius:13px; padding:9px 14px; color:var(--ink); background:#fff8df; box-shadow:0 5px 0 var(--ink); cursor:pointer; transition:.15s ease; }
+    .control:hover { background:var(--gold); transform:translateY(-2px); box-shadow:0 7px 0 var(--ink); }
+    .control:active { transform:translateY(4px); box-shadow:0 1px 0 var(--ink); }
+    .hint { position:absolute; left:clamp(12px,2.7vw,32px); bottom:clamp(12px,2.5vw,28px); z-index:6; padding:9px 13px; border-radius:12px; background:#ffffffc9; font:800 clamp(9px,1.2vw,14px)/1.2 system-ui,sans-serif; box-shadow:0 3px 0 #15223828; }
+    .paused .moving { animation-play-state:paused!important; }
+    .paused::after { content:"PAUSED"; position:absolute; inset:0; z-index:4; display:grid; place-items:center; color:white; background:#15223835; font-size:clamp(48px,11vw,130px); letter-spacing:.05em; text-shadow:6px 7px 0 var(--ink); pointer-events:none; }
+
+    .clouds { animation:cloudMove 26s linear infinite; }
+    .clouds.far { animation-duration:42s; animation-delay:-19s; opacity:.7; }
+    .far-hills { animation:farMove 18s linear infinite; }
+    .near-hills { animation:nearMove 10s linear infinite; }
+    .roadmarks { animation:roadMove 1.2s linear infinite; }
+    .rider { animation:bounce .52s ease-in-out infinite alternate; transform-origin:570px 500px; }
+    .wheel-spin { animation:spin .72s linear infinite; transform-box:fill-box; transform-origin:center; }
+    .crank { animation:spin .72s linear infinite; transform-origin:580px 506px; }
+    .leg-front { animation:legFront .72s ease-in-out infinite; transform-origin:532px 398px; }
+    .leg-back { animation:legBack .72s ease-in-out infinite; transform-origin:568px 400px; }
+    .coin { animation:coinFloat 1.1s ease-in-out infinite alternate; transform-origin:center; }
+    .spark { animation:spark 1s ease-out infinite; transform-origin:center; }
+    .dust { animation:dust 1.2s linear infinite; }
+    @keyframes cloudMove { to { transform:translateX(1250px); } }
+    @keyframes farMove { to { transform:translateX(-500px); } }
+    @keyframes nearMove { to { transform:translateX(-700px); } }
+    @keyframes roadMove { to { transform:translateX(-230px); } }
+    @keyframes bounce { to { transform:translateY(-7px) rotate(.5deg); } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes legFront { 0%,100% { transform:rotate(12deg); } 50% { transform:rotate(-18deg); } }
+    @keyframes legBack { 0%,100% { transform:rotate(-17deg); } 50% { transform:rotate(14deg); } }
+    @keyframes coinFloat { to { transform:translateY(-18px) rotateY(55deg); } }
+    @keyframes spark { from { opacity:1; transform:scale(.3) rotate(0); } to { opacity:0; transform:scale(1.8) rotate(90deg); } }
+    @keyframes dust { from { opacity:.8; transform:translate(0,0) scale(.3); } to { opacity:0; transform:translate(-90px,-35px) scale(1.4); } }
+    @media (max-width:650px) {
+      .game { width:100vw; height:100vh; max-height:none; aspect-ratio:auto; border:0; border-radius:0; }
+      .scene { width:auto; min-width:100%; height:100%; left:50%; transform:translateX(-50%); }
+      .pill:first-child { display:none; }
+      .hint { bottom:70px; }
+    }
+    @media (prefers-reduced-motion:reduce) { .moving { animation-duration:0.001ms!important; animation-iteration-count:1!important; } }
+  </style>
+</head>
+<body>
+  <main class="game" id="game" aria-label="超级玛丽骑自行车动态场景">
+    <svg class="scene" viewBox="0 0 1200 675" role="img" aria-labelledby="sceneTitle sceneDesc">
+      <title id="sceneTitle">超级玛丽骑自行车</title>
+      <desc id="sceneDesc">玛丽在蘑菇王国的道路上骑着红色自行车，远处有山丘、云朵、金币和水管。</desc>
+      <defs>
+        <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#55c7f3"/><stop offset="1" stop-color="#baf2f5"/></linearGradient>
+        <linearGradient id="road" x2="0" y2="1"><stop stop-color="#d89558"/><stop offset="1" stop-color="#a95f3c"/></linearGradient>
+        <radialGradient id="sun"><stop stop-color="#fffbd0"/><stop offset=".45" stop-color="#ffe36e"/><stop offset="1" stop-color="#ffc832"/></radialGradient>
+        <filter id="shadow"><feDropShadow dx="0" dy="7" stdDeviation="2" flood-color="#152238" flood-opacity=".23"/></filter>
+        <pattern id="roadTexture" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="8" cy="12" r="2" fill="#83442f" opacity=".22"/><circle cx="30" cy="28" r="1.5" fill="#fff1bd" opacity=".22"/></pattern>
+      </defs>
+      <rect width="1200" height="675" fill="url(#sky)"/>
+      <circle cx="955" cy="114" r="68" fill="url(#sun)" opacity=".9"/>
+      <g class="clouds far moving" fill="#fff"><path d="M-190 225c8-36 61-43 77-12 21-36 82-17 76 25h-153z"/><path d="M330 170c10-45 76-49 91-9 30-29 80-1 68 36H330z"/></g>
+      <g class="clouds moving" fill="#fff" filter="url(#shadow)"><path d="M-260 125c12-58 97-64 119-13 38-40 104 0 88 47h-207z"/><path d="M82 264c9-40 70-48 88-10 30-33 87-2 74 41H82z"/></g>
+
+      <g class="far-hills moving">
+        <path d="M-500 470Q-330 195-160 470Q10 240 190 470Q360 180 540 470Q730 240 900 470Q1070 170 1240 470Q1410 230 1580 470Z" fill="#63d394"/>
+        <g fill="#2eb879" opacity=".7"><ellipse cx="-160" cy="385" rx="12" ry="22"/><ellipse cx="180" cy="390" rx="13" ry="24"/><ellipse cx="530" cy="370" rx="13" ry="24"/><ellipse cx="900" cy="390" rx="13" ry="24"/><ellipse cx="1235" cy="372" rx="13" ry="24"/></g>
+      </g>
+      <g class="near-hills moving">
+        <path d="M-700 505Q-480 280-260 505Q-40 320 180 505Q400 250 650 505Q870 310 1100 505Q1320 260 1570 505H-700Z" fill="#35b96f"/>
+        <path d="M-680 505Q-480 340-280 505M230 505Q420 315 620 505M1070 505Q1270 315 1490 505" fill="none" stroke="#89e49e" stroke-width="14" opacity=".45"/>
+      </g>
+
+      <g transform="translate(995 335)" filter="url(#shadow)">
+        <path d="M18 64v117h105V64" fill="#20a557" stroke="#152238" stroke-width="7"/>
+        <rect width="142" height="73" rx="8" fill="#39ca69" stroke="#152238" stroke-width="7"/>
+        <path d="M25 9v54M107 9v54" stroke="#8bea91" stroke-width="13" opacity=".65"/>
+      </g>
+      <g class="coin moving" transform="translate(930 250)" filter="url(#shadow)">
+        <ellipse rx="24" ry="34" fill="#ffcf28" stroke="#9d651b" stroke-width="6"/><path d="M0-20v40" stroke="#fff19b" stroke-width="7"/>
+      </g>
+      <g class="spark moving" transform="translate(930 250)" stroke="#fff7b0" stroke-width="5"><path d="M0-55v-15M0 55v15M-45-35l-12-10M45-35l12-10"/></g>
+
+      <path d="M0 481H1200V675H0Z" fill="url(#road)"/>
+      <rect y="481" width="1200" height="194" fill="url(#roadTexture)"/>
+      <path d="M0 481H1200" stroke="#75452e" stroke-width="13"/>
+      <g class="roadmarks moving" fill="#ffe9a6"><path d="M-220 584h135l35 19h-142zM20 584h135l35 19H48zM260 584h135l35 19H288zM500 584h135l35 19H528zM740 584h135l35 19H768zM980 584h135l35 19h-142zM1220 584h135l35 19h-142z"/></g>
+
+      <g class="dust moving" fill="#f4cc91"><circle cx="340" cy="538" r="15"/><circle cx="310" cy="548" r="9"/><circle cx="280" cy="555" r="5"/></g>
+      <ellipse cx="580" cy="581" rx="250" ry="27" fill="#663b32" opacity=".22"/>
+
+      <g class="rider moving" filter="url(#shadow)">
+        <!-- wheels -->
+        <g class="wheel-spin moving">
+          <circle cx="405" cy="518" r="103" fill="#c5eff5" fill-opacity=".25" stroke="#152238" stroke-width="13"/>
+          <g stroke="#526174" stroke-width="3"><path d="M405 418v200M305 518h200M334 447l142 142M334 589l142-142"/></g>
+          <circle cx="405" cy="518" r="13" fill="#ffc928" stroke="#152238" stroke-width="7"/>
+        </g>
+        <g class="wheel-spin moving">
+          <circle cx="755" cy="518" r="103" fill="#c5eff5" fill-opacity=".25" stroke="#152238" stroke-width="13"/>
+          <g stroke="#526174" stroke-width="3"><path d="M755 418v200M655 518h200M684 447l142 142M684 589l142-142"/></g>
+          <circle cx="755" cy="518" r="13" fill="#ffc928" stroke="#152238" stroke-width="7"/>
+        </g>
+        <!-- bicycle frame: two proper triangles -->
+        <g fill="none" stroke="#e52521" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M405 518L515 363L580 506L405 518L540 416L690 414L755 518"/>
+          <path d="M580 506L690 414"/>
+        </g>
+        <g fill="none" stroke="#152238" stroke-width="9" stroke-linecap="round"><path d="M690 414l-17-72 48-9"/><path d="M515 363l-13-35"/></g>
+        <path d="M477 327h67" stroke="#152238" stroke-width="15" stroke-linecap="round"/>
+        <g class="crank moving"><circle cx="580" cy="506" r="20" fill="#ffc928" stroke="#152238" stroke-width="7"/><path d="M580 506l38 14" stroke="#152238" stroke-width="8" stroke-linecap="round"/></g>
+
+        <!-- back leg -->
+        <g class="leg-back moving" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M555 397L583 454L550 500" stroke="#1768be" stroke-width="31"/>
+          <path d="M550 500l-20 24" stroke="#713d2b" stroke-width="22"/>
+        </g>
+        <!-- torso / overalls -->
+        <path d="M474 260Q545 235 591 285L583 407Q525 439 465 396Z" fill="#e52521" stroke="#152238" stroke-width="8"/>
+        <path d="M477 319h91l17 89q-54 27-117-6z" fill="#176dcc" stroke="#152238" stroke-width="8"/>
+        <path d="M489 287l12 59M558 282l-10 64" stroke="#176dcc" stroke-width="18"/>
+        <circle cx="498" cy="350" r="8" fill="#ffc928" stroke="#152238" stroke-width="4"/><circle cx="551" cy="350" r="8" fill="#ffc928" stroke="#152238" stroke-width="4"/>
+        <!-- head and iconic profile -->
+        <path d="M456 170Q509 134 565 171Q589 194 576 239Q559 278 506 280Q463 274 444 238Q431 196 456 170Z" fill="#f1a469" stroke="#152238" stroke-width="8"/>
+        <path d="M448 193q-21 28 10 65l25-8-6-38z" fill="#6d3925"/>
+        <path d="M457 179q15-60 85-45 41 9 47 45h-132z" fill="#e52521" stroke="#152238" stroke-width="8"/>
+        <path d="M439 177h145q14 0 13 13H450Z" fill="#e52521" stroke="#152238" stroke-width="8" stroke-linejoin="round"/>
+        <circle cx="523" cy="157" r="20" fill="#fff8df"/><text x="523" y="165" text-anchor="middle" fill="#e52521" font-size="25" font-family="Impact">M</text>
+        <path d="M547 205q42-9 45 19-4 23-42 12" fill="#ef9863" stroke="#152238" stroke-width="7"/>
+        <circle cx="550" cy="191" r="6" fill="#152238"/>
+        <path d="M521 225q30-20 56 3-9 23-51 13z" fill="#603522"/>
+        <path d="M475 257q20 19 46 14" fill="none" stroke="#603522" stroke-width="9"/>
+        <!-- arms reaching handlebars -->
+        <path d="M563 297Q625 319 677 350" fill="none" stroke="#e52521" stroke-width="28" stroke-linecap="round"/>
+        <circle cx="681" cy="350" r="16" fill="#fff8df" stroke="#152238" stroke-width="7"/>
+        <path d="M486 301Q551 324 651 348" fill="none" stroke="#e52521" stroke-width="27" stroke-linecap="round"/>
+        <circle cx="656" cy="349" r="16" fill="#fff8df" stroke="#152238" stroke-width="7"/>
+        <!-- front leg over frame -->
+        <g class="leg-front moving" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M522 399L558 450L611 506" stroke="#176dcc" stroke-width="34"/>
+          <path d="M611 506l35 14" stroke="#713d2b" stroke-width="23"/>
+        </g>
+      </g>
+    </svg>
+
+    <header class="hud">
+      <div class="title">MARIO<br>RIDE<small>SUNDAY IN MUSHROOM KINGDOM</small></div>
+      <div class="scoreboard"><div class="pill">DISTANCE<b id="distance">01.2</b></div><div class="pill">COINS<b id="coins">12</b></div></div>
+    </header>
+    <div class="hint">SPACE 暂停 · R 重置</div>
+    <div class="controls"><button class="control" id="toggle" type="button">❚❚ 暂停</button><button class="control" id="reset" type="button">↻ 重置</button></div>
+  </main>
+  <script>
+    const game = document.getElementById('game');
+    const toggle = document.getElementById('toggle');
+    const reset = document.getElementById('reset');
+    const coins = document.getElementById('coins');
+    const distance = document.getElementById('distance');
+    let paused = false;
+    let coinCount = 12;
+    let meters = 1.2;
+    let timer;
+
+    function render() {
+      game.classList.toggle('paused', paused);
+      toggle.textContent = paused ? '▶ 继续' : '❚❚ 暂停';
+      coins.textContent = String(coinCount).padStart(2, '0');
+      distance.textContent = meters.toFixed(1).padStart(4, '0');
+      toggle.setAttribute('aria-pressed', String(paused));
+    }
+    function setPaused(value) { paused = value; render(); }
+    function restart() { paused = false; coinCount = 12; meters = 1.2; render(); }
+    toggle.addEventListener('click', () => setPaused(!paused));
+    reset.addEventListener('click', restart);
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'Space') { event.preventDefault(); setPaused(!paused); }
+      if (event.key.toLowerCase() === 'r') restart();
+    });
+    timer = window.setInterval(() => {
+      if (paused) return;
+      meters += 0.1;
+      if (Math.round(meters * 10) % 7 === 0) coinCount = coinCount >= 99 ? 0 : coinCount + 1;
+      render();
+    }, 700);
+    render();
+  </script>
+</body>
+</html>

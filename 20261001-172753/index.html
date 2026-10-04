@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pelican Ride</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #24313b;
+      --muted-ink: #5d6f78;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-border: rgba(36, 49, 59, 0.12);
+      --accent: #e87952;
+      --accent-dark: #b75136;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      overflow: hidden;
+      background: #b9e4e7;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .scene {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .hud {
+      position: absolute;
+      z-index: 2;
+      top: clamp(16px, 3vw, 32px);
+      left: clamp(16px, 3vw, 32px);
+      right: clamp(16px, 3vw, 32px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .wordmark,
+    .controls {
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 14px 34px rgba(36, 49, 59, 0.12);
+      backdrop-filter: blur(12px);
+    }
+
+    .wordmark {
+      padding: 12px 15px 11px;
+      border-radius: 8px;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .wordmark small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted-ink);
+      letter-spacing: 0.02em;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      pointer-events: auto;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      color: #fff;
+      background: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .toggle:hover {
+      background: var(--accent-dark);
+    }
+
+    .toggle:active {
+      transform: translateY(1px);
+    }
+
+    .toggle:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(232, 121, 82, 0.35);
+      outline-offset: 2px;
+    }
+
+    .toggle svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+      flex: 0 0 auto;
+    }
+
+    .speed-control {
+      display: grid;
+      grid-template-columns: auto minmax(70px, 110px) auto;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted-ink);
+      font-size: 11px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .speed-control input {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .speed-control output {
+      min-width: 30px;
+      color: var(--ink);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      position: absolute;
+      z-index: 2;
+      right: clamp(16px, 3vw, 32px);
+      bottom: clamp(14px, 2.5vw, 26px);
+      padding: 8px 10px;
+      border: 1px solid rgba(36, 49, 59, 0.1);
+      border-radius: 6px;
+      color: rgba(36, 49, 59, 0.68);
+      background: rgba(255, 255, 255, 0.58);
+      font-size: 11px;
+      font-weight: 650;
+      pointer-events: none;
+    }
+
+    @media (max-width: 640px) {
+      .hud {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .controls {
+        align-self: flex-start;
+        max-width: 100%;
+      }
+
+      .hint {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .toggle {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Animated pelican riding a bicycle beside the sea">
+    <svg id="scene" class="scene" viewBox="0 0 1200 720" role="img" aria-label="A pelican riding a bicycle along a seaside road">
+      <rect width="1200" height="720" fill="#b9e4e7" />
+      <circle cx="1018" cy="108" r="48" fill="#f9d88b" />
+
+      <g id="cloudA" fill="#f8fbf4" opacity="0.9">
+        <circle cx="0" cy="0" r="22" />
+        <circle cx="28" cy="-12" r="31" />
+        <circle cx="65" cy="0" r="24" />
+        <rect x="-8" y="0" width="82" height="20" rx="10" />
+      </g>
+      <g id="cloudB" fill="#f8fbf4" opacity="0.72">
+        <circle cx="0" cy="0" r="17" />
+        <circle cx="26" cy="-10" r="25" />
+        <circle cx="58" cy="0" r="18" />
+        <rect x="-7" y="0" width="72" height="17" rx="8" />
+      </g>
+      <g id="cloudC" fill="#f8fbf4" opacity="0.55">
+        <circle cx="0" cy="0" r="19" />
+        <circle cx="27" cy="-9" r="26" />
+        <circle cx="61" cy="0" r="20" />
+        <rect x="-8" y="0" width="77" height="18" rx="9" />
+      </g>
+
+      <rect y="340" width="1200" height="168" fill="#82c4c8" />
+      <path d="M0 391 C105 370 206 407 310 388 S520 376 620 394 S835 414 940 390 S1100 373 1200 395 V508 H0 Z" fill="#72b5bb" opacity="0.56" />
+      <path d="M0 425 C112 405 210 438 319 421 S524 412 630 428 S842 447 952 424 S1103 407 1200 430" fill="none" stroke="#d3f0e8" stroke-width="4" opacity="0.42" />
+
+      <g id="waves" fill="none" stroke="#d3f0e8" stroke-width="4" stroke-linecap="round" opacity="0.62">
+        <path d="M-140 366 C-100 350 -62 350 -22 366 S56 382 96 366 S174 350 214 366 S292 382 332 366 S410 350 450 366 S528 382 568 366 S646 350 686 366 S764 382 804 366 S882 350 922 366 S1000 382 1040 366 S1118 350 1158 366 S1236 382 1276 366" />
+        <path d="M-90 458 C-50 444 -10 444 30 458 S110 472 150 458 S230 444 270 458 S350 472 390 458 S470 444 510 458 S590 472 630 458 S710 444 750 458 S830 472 870 458 S950 444 990 458 S1070 472 1110 458 S1190 444 1230 458" opacity="0.62" />
+      </g>
+
+      <path d="M0 455 C150 438 260 466 396 450 S678 440 810 456 S1060 468 1200 448 V516 H0 Z" fill="#6e9c8e" />
+      <path d="M0 487 C130 470 262 497 400 481 S670 470 815 488 S1074 499 1200 480 V523 H0 Z" fill="#5e8d80" />
+
+      <rect y="510" width="1200" height="210" fill="#596570" />
+      <rect y="510" width="1200" height="7" fill="#f0d68e" />
+      <rect y="684" width="1200" height="7" fill="#394650" opacity="0.75" />
+      <g id="laneMarks" fill="#e8e8d9" opacity="0.92">
+        <rect x="-140" y="603" width="78" height="9" rx="4" />
+        <rect x="40" y="603" width="78" height="9" rx="4" />
+        <rect x="220" y="603" width="78" height="9" rx="4" />
+        <rect x="400" y="603" width="78" height="9" rx="4" />
+        <rect x="580" y="603" width="78" height="9" rx="4" />
+        <rect x="760" y="603" width="78" height="9" rx="4" />
+        <rect x="940" y="603" width="78" height="9" rx="4" />
+        <rect x="1120" y="603" width="78" height="9" rx="4" />
+        <rect x="1300" y="603" width="78" height="9" rx="4" />
+      </g>
+
+      <g id="groundShadow" opacity="0.28">
+        <ellipse cx="625" cy="631" rx="258" ry="22" fill="#25313b" />
+      </g>
+
+      <g id="bike">
+        <g id="backWheel" fill="none" stroke-linecap="round">
+          <circle cx="470" cy="545" r="82" stroke="#27353e" stroke-width="13" />
+          <circle cx="470" cy="545" r="72" stroke="#c6e0da" stroke-width="3" />
+          <g id="backSpokes" stroke="#c6e0da" stroke-width="2">
+            <line x1="470" y1="473" x2="470" y2="617" />
+            <line x1="398" y1="545" x2="542" y2="545" />
+            <line x1="419" y1="494" x2="521" y2="596" />
+            <line x1="521" y1="494" x2="419" y2="596" />
+          </g>
+          <circle cx="470" cy="545" r="8" fill="#e87952" stroke="#27353e" stroke-width="4" />
+        </g>
+
+        <g id="frontWheel" fill="none" stroke-linecap="round">
+          <circle cx="780" cy="545" r="82" stroke="#27353e" stroke-width="13" />
+          <circle cx="780" cy="545" r="72" stroke="#c6e0da" stroke-width="3" />
+          <g id="frontSpokes" stroke="#c6e0da" stroke-width="2">
+            <line x1="780" y1="473" x2="780" y2="617" />
+            <line x1="708" y1="545" x2="852" y2="545" />
+            <line x1="729" y1="494" x2="831" y2="596" />
+            <line x1="831" y1="494" x2="729" y2="596" />
+          </g>
+          <circle cx="780" cy="545" r="8" fill="#e87952" stroke="#27353e" stroke-width="4" />
+        </g>
+
+        <g id="frame" fill="none" stroke="#e87952" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M470 545 L565 435 L625 545 L470 545 L780 545 L625 545 L565 435" />
+          <path d="M625 545 L760 425 L780 545" />
+        </g>
+        <path d="M548 433 L578 433" fill="none" stroke="#27353e" stroke-width="11" stroke-linecap="round" />
+        <path d="M760 425 L754 402 L785 390" fill="none" stroke="#27353e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M785 390 L807 398" fill="none" stroke="#27353e" stroke-width="8" stroke-linecap="round" />
+
+        <g id="pedals" fill="none" stroke="#27353e" stroke-linecap="round">
+          <circle cx="625" cy="545" r="14" stroke-width="5" />
+          <path d="M625 545 L663 523 M625 545 L587 567" stroke-width="5" />
+          <path d="M658 519 L674 519 M582 571 L566 571" stroke-width="7" />
+        </g>
+        <path d="M468 545 C515 515 558 502 625 505 S731 513 780 545" fill="none" stroke="#27353e" stroke-width="3" opacity="0.72" />
+      </g>
+
+      <g id="pelicanRide">
+        <g id="farLeg" fill="none" stroke="#d36e44" stroke-linecap="round" stroke-linejoin="round">
+          <path id="farLegPath" d="M587 387 Q590 445 585 567" stroke-width="12" opacity="0.76" />
+          <path id="farFoot" d="M0 0 C13 -5 27 -4 36 2 C27 9 14 10 0 7 Z" fill="#e87952" stroke-width="4" />
+        </g>
+        <g id="nearLeg" fill="none" stroke="#e87952" stroke-linecap="round" stroke-linejoin="round">
+          <path id="nearLegPath" d="M625 388 Q636 445 665 523" stroke-width="13" />
+          <path id="nearFoot" d="M0 0 C13 -5 27 -4 36 2 C27 9 14 10 0 7 Z" fill="#f18d5d" stroke-width="4" />
+        </g>
+
+        <g id="pelicanBody">
+          <path d="M522 332 C489 323 475 341 458 363 C485 365 508 358 535 346 Z" fill="#d6dde0" stroke="#27353e" stroke-width="4" stroke-linejoin="round" />
+          <path d="M540 282 C550 237 579 209 618 209 C664 209 696 253 690 317 C685 382 649 422 603 422 C553 422 518 381 522 332 C524 313 530 296 540 282 Z" fill="#f3f1e8" stroke="#27353e" stroke-width="5" stroke-linejoin="round" />
+          <path d="M546 340 C573 369 615 380 665 362 C651 402 630 421 603 422 C567 422 540 394 530 360 Z" fill="#ffffff" opacity="0.78" />
+          <path d="M604 282 C626 264 659 266 686 294 C675 333 653 357 620 364 C602 345 595 315 604 282 Z" fill="#cdd8dc" stroke="#27353e" stroke-width="4" stroke-linejoin="round" />
+          <path id="wing" d="M627 278 C669 270 722 292 748 334 C723 362 688 374 647 363 C627 342 618 312 627 278 Z" fill="#aebfc5" stroke="#27353e" stroke-width="5" stroke-linejoin="round" />
+          <path d="M651 300 C685 303 711 318 730 337" fill="none" stroke="#e8f0ed" stroke-width="6" stroke-linecap="round" opacity="0.88" />
+          <path d="M654 319 C685 322 706 333 718 346" fill="none" stroke="#e8f0ed" stroke-width="4" stroke-linecap="round" opacity="0.72" />
+          <path d="M590 286 C603 255 615 237 613 211 C611 190 622 168 646 154 L677 167 C653 191 654 216 668 239 C682 263 673 289 651 315 Z" fill="#f3f1e8" stroke="#27353e" stroke-width="5" stroke-linejoin="round" />
+          <ellipse cx="653" cy="155" rx="48" ry="39" fill="#f3f1e8" stroke="#27353e" stroke-width="5" />
+          <path d="M633 125 L646 104 L654 128 L665 104 L673 132" fill="#dce3e2" stroke="#27353e" stroke-width="4" stroke-linejoin="round" />
+          <path d="M687 153 C723 155 778 168 826 184 C790 204 736 206 686 186 Z" fill="#e87952" stroke="#27353e" stroke-width="5" stroke-linejoin="round" />
+          <path d="M688 178 C728 185 774 186 811 184 C783 213 730 215 689 191 Z" fill="#f19a67" stroke="#27353e" stroke-width="4" stroke-linejoin="round" />
+          <circle cx="671" cy="145" r="7" fill="#27353e" />
+          <circle cx="673" cy="142" r="2.5" fill="#ffffff" />
+          <path d="M548 290 C535 318 536 355 554 379" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" opacity="0.88" />
+        </g>
+      </g>
+    </svg>
+
+    <div class="hud">
+      <div class="wordmark">
+        PELICAN RIDE
+        <small>coastal commute</small>
+      </div>
+
+      <div class="controls" aria-label="Animation controls">
+        <button id="toggle" class="toggle" type="button" aria-pressed="false" title="Pause or resume the animation">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path id="toggleGlyph" d="M4 3.2h2.3v9.6H4zM9.7 3.2H12v9.6H9.7z" /></svg>
+          <span id="toggleText">Pause</span>
+        </button>
+        <label class="speed-control">
+          <span>Speed</span>
+          <input id="speed" type="range" min="0.4" max="2.4" value="1" step="0.1" aria-label="Animation speed">
+          <output id="speedValue" for="speed">1.0x</output>
+        </label>
+      </div>
+    </div>
+
+    <div class="hint">Tap the scene or press Space to pause</div>
+  </main>
+
+  <script>
+    (() => {
+      const scene = document.getElementById('scene');
+      const toggle = document.getElementById('toggle');
+      const toggleGlyph = document.getElementById('toggleGlyph');
+      const toggleText = document.getElementById('toggleText');
+      const speed = document.getElementById('speed');
+      const speedValue = document.getElementById('speedValue');
+      const backWheel = document.getElementById('backWheel');
+      const frontWheel = document.getElementById('frontWheel');
+      const pedals = document.getElementById('pedals');
+      const laneMarks = document.getElementById('laneMarks');
+      const waves = document.getElementById('waves');
+      const pelicanRide = document.getElementById('pelicanRide');
+      const wing = document.getElementById('wing');
+      const farLegPath = document.getElementById('farLegPath');
+      const nearLegPath = document.getElementById('nearLegPath');
+      const farFoot = document.getElementById('farFoot');
+      const nearFoot = document.getElementById('nearFoot');
+      const clouds = [
+        { node: document.getElementById('cloudA'), baseX: 146, y: 112, speed: 9 },
+        { node: document.getElementById('cloudB'), baseX: 562, y: 92, speed: 14 },
+        { node: document.getElementById('cloudC'), baseX: 875, y: 183, speed: 7 }
+      ];
+
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let running = !prefersReducedMotion;
+      let lastFrame = performance.now();
+      let time = 0;
+
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+      function setRunning(next) {
+        running = next;
+        toggle.setAttribute('aria-pressed', String(!running));
+        toggleText.textContent = running ? 'Pause' : 'Play';
+        toggle.title = running ? 'Pause the animation' : 'Resume the animation';
+        toggleGlyph.setAttribute('d', running
+          ? 'M4 3.2h2.3v9.6H4zM9.7 3.2H12v9.6H9.7z'
+          : 'M5 3.2 12.7 8 5 12.8z');
+      }
+
+      function updateLegs(pedalAngle, bob) {
+        const near = {
+          x: 625 + Math.cos(pedalAngle) * 39,
+          y: 545 + Math.sin(pedalAngle) * 39
+        };
+        const far = {
+          x: 625 + Math.cos(pedalAngle + Math.PI) * 39,
+          y: 545 + Math.sin(pedalAngle + Math.PI) * 39
+        };
+        const nearKnee = {
+          x: 612 + Math.cos(pedalAngle) * 18,
+          y: 452 + Math.sin(pedalAngle) * 17
+        };
+        const farKnee = {
+          x: 602 + Math.cos(pedalAngle + Math.PI) * 18,
+          y: 452 + Math.sin(pedalAngle + Math.PI) * 17
+        };
+
+        nearLegPath.setAttribute('d', `M625 388 Q${nearKnee.x.toFixed(1)} ${(nearKnee.y - bob).toFixed(1)} ${near.x.toFixed(1)} ${(near.y - bob).toFixed(1)}`);
+        farLegPath.setAttribute('d', `M587 387 Q${farKnee.x.toFixed(1)} ${(farKnee.y - bob).toFixed(1)} ${far.x.toFixed(1)} ${(far.y - bob).toFixed(1)}`);
+        nearFoot.setAttribute('transform', `translate(${near.x.toFixed(1)} ${(near.y - bob).toFixed(1)}) rotate(${(pedalAngle * 180 / Math.PI + 6).toFixed(1)})`);
+        farFoot.setAttribute('transform', `translate(${far.x.toFixed(1)} ${(far.y - bob).toFixed(1)}) rotate(${(pedalAngle * 180 / Math.PI + 186).toFixed(1)})`);
+      }
+
+      function render() {
+        const animationSpeed = Number(speed.value);
+        const wheelDegrees = time * 250;
+        const pedalAngle = time * 3.4;
+        const bob = Math.sin(time * 7.2) * 3.2;
+        const wingAngle = -7 + Math.sin(time * 5.1) * 8;
+        const roadOffset = (time * 210) % 180;
+        const waveOffset = (time * 34) % 140;
+
+        backWheel.setAttribute('transform', `rotate(${wheelDegrees.toFixed(2)} 470 545)`);
+        frontWheel.setAttribute('transform', `rotate(${wheelDegrees.toFixed(2)} 780 545)`);
+        pedals.setAttribute('transform', `rotate(${(pedalAngle * 180 / Math.PI).toFixed(2)} 625 545)`);
+        laneMarks.setAttribute('transform', `translate(${-roadOffset.toFixed(2)} 0)`);
+        waves.setAttribute('transform', `translate(${-waveOffset.toFixed(2)} 0)`);
+        pelicanRide.setAttribute('transform', `translate(0 ${bob.toFixed(2)})`);
+        wing.setAttribute('transform', `rotate(${wingAngle.toFixed(2)} 632 278)`);
+        updateLegs(pedalAngle, bob);
+
+        clouds.forEach((cloud, index) => {
+          const span = 1450;
+          const x = ((cloud.baseX + time * cloud.speed) % span) - 140;
+          const y = cloud.y + Math.sin(time * 0.35 + index) * 3;
+          cloud.node.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+        });
+
+        speedValue.textContent = `${animationSpeed.toFixed(1)}x`;
+      }
+
+      function frame(now) {
+        const elapsed = clamp((now - lastFrame) / 1000, 0, 0.05);
+        lastFrame = now;
+        if (running) {
+          time += elapsed * Number(speed.value);
+        }
+        render();
+        requestAnimationFrame(frame);
+      }
+
+      toggle.addEventListener('click', () => setRunning(!running));
+      speed.addEventListener('input', render);
+      scene.addEventListener('click', () => setRunning(!running));
+      window.addEventListener('keydown', (event) => {
+        if (event.code === 'Space' && event.target === document.body) {
+          event.preventDefault();
+          setRunning(!running);
+        }
+      });
+
+      setRunning(running);
+      render();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# ===== macOS 系统文件 =====
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+# ===== 编辑器 / Agent 工具的机器本地状态 =====
+.claude/
+.workbuddy/
+
+# ===== 临时与日志 =====
+*.log
+*.tmp
+*.bak
+*~

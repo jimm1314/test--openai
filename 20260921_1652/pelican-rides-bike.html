@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="y3RBx3tKlKvzXCqDLQajEY">
+<head data-page-node-id="PGBjT2JBgKIqWlXT1i8w0T">
+<meta charset="UTF-8" data-page-node-id="7xsBcZCKE1u0OWRyHBfZbw">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="QLcNAnE5Bbib4vjpxtYoos">
+<title>鹈鹕骑自行车</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: linear-gradient(#7ec8f5 0%, #bfe8ff 55%, #8fd98a 55%, #6cbf62 100%); font-family: -apple-system, "PingFang SC", sans-serif; }
+
+  .scene { position: relative; width: 100%; height: 100%; }
+
+  /* 太阳 */
+  .sun {
+    position: absolute; top: 8%; right: 10%;
+    width: 90px; height: 90px; border-radius: 50%;
+    background: radial-gradient(circle, #fff6a9, #ffd93b);
+    box-shadow: 0 0 60px 20px rgba(255, 220, 80, .55);
+    animation: sunPulse 4s ease-in-out infinite;
+  }
+  @keyframes sunPulse { 50% { box-shadow: 0 0 90px 34px rgba(255,220,80,.7); } }
+
+  /* 云 */
+  .cloud {
+    position: absolute; top: 12%; left: -220px;
+    width: 160px; height: 50px;
+    background: #fff; border-radius: 50px; opacity: .9;
+    animation: drift linear infinite;
+  }
+  .cloud::before, .cloud::after {
+    content: ""; position: absolute; background: #fff; border-radius: 50%;
+  }
+  .cloud::before { width: 70px; height: 70px; top: -30px; left: 22px; }
+  .cloud::after  { width: 50px; height: 50px; top: -20px; right: 24px; }
+  .cloud.c2 { top: 22%; animation-delay: -14s; transform: scale(.7); }
+  .cloud.c3 { top: 6%;  animation-delay: -30s; transform: scale(.5); }
+  .cloud { animation-duration: 46s; }
+
+  @keyframes drift { to { transform: translateX(130vw); } }
+
+  /* 飞鸟 */
+  .bird {
+    position: absolute; left: -60px;
+    font-size: 22px; color: #2c4a63;
+    animation: flyAcross 12s linear infinite;
+  }
+  .bird.b1 { top: 18%; animation-delay: 0s; }
+  .bird.b2 { top: 26%; animation-delay: -4s; font-size: 16px; }
+  .bird.b3 { top: 14%; animation-delay: -8s; font-size: 18px; }
+  @keyframes flyAcross { to { transform: translateX(115vw); } }
+
+  /* 山 */
+  .mountain {
+    position: absolute; bottom: 40%;
+    width: 0; height: 0;
+    border-left: 200px solid transparent;
+    border-right: 200px solid transparent;
+    border-bottom: 180px solid #7fb2d9;
+    opacity: .8;
+    animation: mountainMove 30s linear infinite;
+  }
+  .mountain.m2 { border-bottom-color: #6aa3cc; border-left-width: 260px; border-right-width: 260px; border-bottom-width: 220px; animation-delay: -15s; }
+  @keyframes mountainMove { from { left: 110vw; } to { left: -520px; } }
+
+  /* 路 */
+  .road {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 26%;
+    background: #5c6068;
+  }
+  .road::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+    background: #3f4750;
+  }
+  .lane {
+    position: absolute; top: 50%; left: 0; width: 100%; height: 6px;
+    background: repeating-linear-gradient(90deg, #ffd93b 0 60px, transparent 60px 120px);
+    animation: laneMove .8s linear infinite;
+    transform: translateY(-50%);
+  }
+  @keyframes laneMove { to { background-position: -120px 0; } }
+
+  /* 草地的草叶 */
+  .grass-tuft {
+    position: absolute; bottom: 25.5%; width: 8px; height: 26px;
+    background: #4a9b43; border-radius: 4px 4px 0 0;
+    animation: tuftMove 5s linear infinite;
+  }
+  @keyframes tuftMove { from { left: 105vw; } to { left: -30px; } }
+
+  /* === 骑手+自行车 整体颠簸 === */
+  .rider {
+    position: absolute; left: 50%; bottom: 26%;
+    width: 320px; height: 300px;
+    transform: translateX(-50%);
+    animation: bob 0.9s ease-in-out infinite;
+  }
+  @keyframes bob { 50% { transform: translateX(-50%) translateY(-6px); } }
+
+  .bike-part { position: absolute; }
+
+  /* 车架（用线条拼） */
+  .frame-line {
+    position: absolute; background: #e8483f; border-radius: 4px;
+    transform-origin: left center;
+  }
+
+  /* 车轮 */
+  .wheel {
+    position: absolute; bottom: 0;
+    width: 96px; height: 96px; border-radius: 50%;
+    border: 7px solid #26262b;
+    box-sizing: border-box;
+    animation: spin 1.1s linear infinite;
+  }
+  .wheel::before { /* 轮毂十字辐条 */
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(#9aa0a8, #9aa0a8) center/4px 100% no-repeat,
+      linear-gradient(#9aa0a8, #9aa0a8) center/100% 4px no-repeat;
+    border-radius: 50%;
+  }
+  .wheel::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 14px; height: 14px; background: #555; border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .wheel.back  { left: 24px; }
+  .wheel.front { right: 24px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 踏板 + 曲柄 */
+  .crank {
+    position: absolute; bottom: 48px; left: 160px;
+    width: 6px; height: 6px;
+    animation: spin 1.1s linear infinite;
+  }
+  .pedal-arm {
+    position: absolute; top: 0; left: 0;
+    width: 6px; height: 34px; background: #333;
+    transform-origin: 3px 0;
+  }
+  .pedal-arm::after {
+    content: ""; position: absolute; bottom: -8px; left: -9px;
+    width: 24px; height: 8px; background: #222; border-radius: 3px;
+  }
+  .pedal-arm.p2 { transform: rotate(180deg); }
+
+  /* === 鹈鹕身体 === */
+  .pelican { position: absolute; left: 70px; bottom: 90px; width: 190px; height: 170px; }
+
+  /* 身体 */
+  .p-body {
+    position: absolute; left: 30px; bottom: 30px;
+    width: 120px; height: 95px;
+    background: #fff;
+    border-radius: 55% 60% 55% 55% / 70% 75% 50% 50%;
+    box-shadow: inset -12px -10px 0 rgba(0,0,0,.06);
+  }
+  /* 尾巴 */
+  .p-tail {
+    position: absolute; left: 12px; bottom: 78px;
+    width: 44px; height: 26px;
+    background: #fff;
+    border-radius: 60% 20% 20% 60%;
+    transform: rotate(-18deg);
+  }
+  /* 翅膀（扇动） */
+  .p-wing {
+    position: absolute; left: 58px; bottom: 78px;
+    width: 78px; height: 52px;
+    background: #f1ede4;
+    border-radius: 60% 60% 20% 80%;
+    transform-origin: 12px 10px;
+    animation: flap 1.1s ease-in-out infinite;
+    box-shadow: inset -6px -6px 0 rgba(0,0,0,.05);
+  }
+  @keyframes flap {
+    0%, 100% { transform: rotate(6deg); }
+    50%      { transform: rotate(-16deg) translateY(-4px); }
+  }
+
+  /* 腿 + 脚（踩踏板） */
+  .p-leg {
+    position: absolute; left: 82px; bottom: -18px;
+    width: 9px; height: 56px;
+    background: #f5a623;
+    border-radius: 5px;
+    transform-origin: 4px 4px;
+    animation: pedal 1.1s linear infinite;
+  }
+  .p-leg.l2 { left: 108px; animation-delay: -0.55s; }
+  @keyframes pedal {
+    from { transform: rotate(360deg); }
+    to   { transform: rotate(0deg); }
+  }
+  .p-leg::after {
+    content: ""; position: absolute; bottom: -6px; left: -8px;
+    width: 26px; height: 10px; background: #f5a623;
+    border-radius: 6px;
+  }
+
+  /* 脖子 */
+  .p-neck {
+    position: absolute; left: 128px; bottom: 106px;
+    width: 26px; height: 44px;
+    background: #fff;
+    border-radius: 14px;
+    transform: rotate(18deg);
+  }
+
+  /* 头（轻微点头） */
+  .p-head {
+    position: absolute; left: 138px; bottom: 138px;
+    width: 46px; height: 42px;
+    background: #fff;
+    border-radius: 50% 50% 45% 55%;
+    animation: nod 1.1s ease-in-out infinite;
+  }
+  @keyframes nod { 50% { transform: rotate(-5deg) translateY(2px); } }
+
+  /* 眼睛 */
+  .p-eye {
+    position: absolute; top: 12px; right: 8px;
+    width: 8px; height: 8px; background: #222; border-radius: 50%;
+  }
+  .p-eye::after {
+    content: ""; position: absolute; top: 1px; left: 1px;
+    width: 3px; height: 3px; background: #fff; border-radius: 50%;
+  }
+
+  /* 喙（含喉囊） */
+  .p-beak {
+    position: absolute; top: 16px; right: -64px;
+    width: 70px; height: 12px;
+    background: #ffb347;
+    border-radius: 0 12px 12px 0;
+  }
+  .p-pouch {
+    position: absolute; top: 26px; right: -52px;
+    width: 52px; height: 26px;
+    background: #ff9d5c;
+    border-radius: 8px 8px 50% 50%;
+    animation: pouchSway 1.1s ease-in-out infinite;
+  }
+  @keyframes pouchSway { 50% { transform: translateY(2px) scaleY(1.06); } }
+
+  /* 头盔 */
+  .p-helmet {
+    position: absolute; top: -10px; left: 4px;
+    width: 40px; height: 22px;
+    background: #e8483f;
+    border-radius: 20px 20px 4px 4px;
+    transform: rotate(-6deg);
+  }
+  .p-helmet::after {
+    content: ""; position: absolute; bottom: -4px; left: 6px; right: 6px;
+    height: 4px; background: #b83229; border-radius: 2px;
+  }
+
+  /* 手臂（扶把） */
+  .p-arm {
+    position: absolute; left: 138px; bottom: 96px;
+    width: 60px; height: 9px;
+    background: #fff;
+    border-radius: 5px;
+    transform: rotate(22deg);
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.08);
+  }
+
+  /* 影子 */
+  .shadow {
+    position: absolute; left: 50%; bottom: calc(26% - 10px);
+    width: 280px; height: 26px;
+    background: rgba(0,0,0,.18);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    animation: shadowPulse 0.9s ease-in-out infinite;
+  }
+  @keyframes shadowPulse { 50% { transform: translateX(-50%) scaleX(.94); opacity: .8; } }
+
+  .title {
+    position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
+    color: #fff; font-size: 26px; font-weight: 700; letter-spacing: 6px;
+    text-shadow: 0 2px 8px rgba(60,120,180,.45);
+    user-select: none;
+  }
+</style>
+</head>
+<body data-page-node-id="F3tF6uQyEY3WI8EML1A2fQ">
+<div class="scene" data-page-node-id="aq4UKoN6yIAQoBHx1XOaXL">
+  <div class="sun" data-page-node-id="PlQj1gCEtlgdKIvF2yjBnY"></div>
+  <div class="cloud c1" data-page-node-id="5SGn76TdIXKQZhPDtVjktY"></div>
+  <div class="cloud c2" data-page-node-id="e8T2zJf1SBZu5FJ8ZBGY4T"></div>
+  <div class="cloud c3" data-page-node-id="vYvxZ8KdYAhEaXoxLch4lg"></div>
+  <div class="bird b1" data-page-node-id="WA1LX94P3GURgfdWcJIQtV">~&#8627;</div>
+  <div class="bird b2" data-page-node-id="rAFNNfCzbZzOIehQAqJNSv">~&#8627;</div>
+  <div class="bird b3" data-page-node-id="ravbbzdLDOVIJbritI0duP">~&#8627;</div>
+  <div class="mountain m1" data-page-node-id="io09HaColiLI3fPuhD1Az9"></div>
+  <div class="mountain m2" data-page-node-id="mVlTWy2RUPCQx4HZi3ZMoN"></div>
+
+  <div class="title" data-page-node-id="9vYV1SQwcbxtXHLrAE3FEZ">鹈鹕的骑行日</div>
+
+  <div class="shadow" data-page-node-id="HC2Vdrgy7SUHoF8ynOo9CF"></div>
+
+  <div class="rider" data-page-node-id="cG2c3pCd0FyijzB7MNPGtc">
+    <!-- 自行车车架 -->
+    <div class="frame-line" style="left:70px;  bottom:48px; width:86px;  height:8px; transform:rotate(0deg);" data-page-node-id="3CAz2zVqAaahx4yJjkR3Gj"></div>   <!-- 下管水平段（后轮到中轴） -->
+    <div class="frame-line" style="left:160px; bottom:52px; width:92px;  height:8px; transform:rotate(-38deg);" data-page-node-id="DosMq4CKZ3O1CYOdU6277d"></div> <!-- 下管 -->
+    <div class="frame-line" style="left:226px; bottom:104px; width:34px; height:8px; transform:rotate(90deg);" data-page-node-id="acDQDnmNFDh8d2xvsBk5St"></div> <!-- 前管 -->
+    <div class="frame-line" style="left:158px; bottom:52px; width:70px;  height:8px; transform:rotate(-104deg);" data-page-node-id="5skljMe83lnzvFpFHUiOXq"></div><!-- 立管 -->
+    <div class="frame-line" style="left:152px; bottom:118px; width:76px; height:8px; transform:rotate(-12deg);" data-page-node-id="BkBrvbLECH0sBDiYAPnyXS"></div> <!-- 上管 -->
+    <div class="frame-line" style="left:222px; bottom:96px;  width:66px; height:7px; transform:rotate(58deg);" data-page-node-id="toVkn7Uk3dO4fY5vlL3QV1"></div>  <!-- 前叉 -->
+    <div class="frame-line" style="left:64px;  bottom:52px;  width:60px; height:7px; transform:rotate(72deg);" data-page-node-id="sX7llRqPKmZZY9sWo5yWfq"></div>  <!-- 后叉上 -->
+    <div class="frame-line" style="left:66px;  bottom:50px;  width:94px; height:7px; transform:rotate(14deg);" data-page-node-id="tqb9FFz99ZRsi9qaszsWRG"></div>   <!-- 后叉下 -->
+    <!-- 车座 -->
+    <div class="bike-part" style="left:140px; bottom:116px; width:36px; height:10px; background:#26262b; border-radius:8px;" data-page-node-id="gnIX8lN4obavGnfoEjWcHL"></div>
+    <!-- 车把 -->
+    <div class="bike-part" style="left:226px; bottom:134px; width:10px; height:26px; background:#333; border-radius:4px; transform:rotate(-8deg);" data-page-node-id="fBRYOcYl4TdwaJtlWpAMtu"></div>
+    <div class="bike-part" style="left:214px; bottom:152px; width:32px; height:8px; background:#333; border-radius:4px;" data-page-node-id="ju1whiYNgzr9rXvkG0kZhx"></div>
+
+    <!-- 踏板曲柄 -->
+    <div class="crank" data-page-node-id="bEI8YmCNWNCCdWXR8QykD4">
+      <div class="pedal-arm" data-page-node-id="bLWQkKZ6avf7PWUCEHw9c4"></div>
+      <div class="pedal-arm p2" data-page-node-id="oppZdCav1mLSBWa4nup8xG"></div>
+    </div>
+
+    <!-- 车轮 -->
+    <div class="wheel back" data-page-node-id="goyFXBPvc7dPv5wdMNMu1D"></div>
+    <div class="wheel front" data-page-node-id="AUtZnmohSJn7pOcbcknjLh"></div>
+
+    <!-- 鹈鹕 -->
+    <div class="pelican" data-page-node-id="fIDoo5rfhLD0a5UYisvlec">
+      <div class="p-tail" data-page-node-id="hqkMT4XkqHhbIK6TFjb6uq"></div>
+      <div class="p-body" data-page-node-id="WgTx4wWFpnidjX5Xple3Bi"></div>
+      <div class="p-wing" data-page-node-id="htbZ8FIw0d11pPah2R27A4"></div>
+      <div class="p-leg l1" data-page-node-id="tGUWLu7xUza5Qvqc0vCAQB"></div>
+      <div class="p-leg l2" data-page-node-id="WgdmNitE9xFnqZPd9TFX0s"></div>
+      <div class="p-neck" data-page-node-id="PPdLErT5iE0FacJEYvo2jr"></div>
+      <div class="p-arm" data-page-node-id="qJeNq4NjYftQtIjsQPGC1o"></div>
+      <div class="p-head" data-page-node-id="dUix7lWLzJEktVIXup8fQK">
+        <div class="p-eye" data-page-node-id="iIGuTgqwVAUmdj5HnSkysY"></div>
+        <div class="p-beak" data-page-node-id="wq7XAk3Pr2C7Ec65XAa7Ex"></div>
+        <div class="p-pouch" data-page-node-id="UnMuigSE3aq5LSp1CyTnw0"></div>
+        <div class="p-helmet" data-page-node-id="VSIvHIFB2etEMZJtkW2esL"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="road" data-page-node-id="HFIQRjhfdHwHRuEI56FeC6"><div class="lane" data-page-node-id="f7BG14wpGHq9u3vbC5Udpi"></div></div>
+
+  <div class="grass-tuft" style="animation-delay:0s;" data-page-node-id="4gsNgf1EtzNc1ZbbHHmRNU"></div>
+  <div class="grass-tuft" style="animation-delay:-1.2s; height:20px;" data-page-node-id="h1g8ZJobnGfeL12DoGReUe"></div>
+  <div class="grass-tuft" style="animation-delay:-2.5s; height:30px;" data-page-node-id="gXRVv6Gobs4n8HhYpI9ypx"></div>
+  <div class="grass-tuft" style="animation-delay:-3.6s;" data-page-node-id="2rjUCaGdsDjGKqYXyzU49H"></div>
+  <div class="grass-tuft" style="animation-delay:-4.5s; height:22px;" data-page-node-id="Gyo6GhShyCUt610FgsQtoA"></div>
+</div>
+</body>
+</html>

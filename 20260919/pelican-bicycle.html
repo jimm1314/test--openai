@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鹈鹕骑自行车</title>
+  <style>
+    :root {
+      --ink: #17324d;
+      --deep: #082338;
+      --sky: #bcecff;
+      --sea: #6bd6dc;
+      --sand: #ffd78b;
+      --coral: #ff806f;
+      --cream: #fff8e8;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #071d31;
+      display: grid;
+      place-items: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .scene {
+      position: relative;
+      width: min(1180px, 100vw);
+      height: min(760px, 100vh);
+      height: min(760px, 100dvh);
+      min-height: min(560px, 100vh);
+      min-height: min(560px, 100dvh);
+      overflow: hidden;
+      isolation: isolate;
+      contain: layout paint;
+      background: linear-gradient(180deg, #a8e9ff 0%, #d9f8f4 62%, #80d8dd 100%);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .35);
+    }
+
+    .sun {
+      position: absolute;
+      width: 145px;
+      aspect-ratio: 1;
+      top: 8%;
+      right: 11%;
+      border-radius: 50%;
+      background: #fff5b0;
+      box-shadow: 0 0 0 24px rgba(255, 244, 167, .16), 0 0 80px rgba(255, 227, 115, .6);
+      animation: sunPulse 5s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .sun::after {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border-radius: 50%;
+      background: rgba(255,255,255,.35);
+      filter: blur(4px);
+    }
+
+    .cloud {
+      --cloud-scale: 1;
+      position: absolute;
+      left: -18%;
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      opacity: .76;
+      animation: drift linear infinite;
+      transform-origin: left center;
+      will-change: transform;
+    }
+
+    .cloud.one { top: 15%; animation-duration: 58s; }
+    .cloud.two { --cloud-scale: .72; top: 31%; animation-duration: 72s; animation-delay: -33s; opacity: .52; }
+
+    .puff {
+      display: block;
+      width: 100px;
+      height: 44px;
+      border-radius: 50px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 26px -24px 0 2px rgba(255,255,255,.78), 66px -34px 0 8px rgba(255,255,255,.78), 110px -18px 0 2px rgba(255,255,255,.78);
+    }
+
+    .horizon {
+      position: absolute;
+      inset: 47% 0 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.2), transparent 18%),
+        repeating-linear-gradient(170deg, transparent 0 22px, rgba(255,255,255,.2) 23px 25px, transparent 26px 45px),
+        linear-gradient(180deg, #77dce1 0%, #52becd 52%, #34a1bc 100%);
+      clip-path: polygon(0 12%, 8% 15%, 18% 9%, 29% 17%, 40% 11%, 54% 14%, 65% 7%, 78% 16%, 90% 10%, 100% 14%, 100% 100%, 0 100%);
+      z-index: -1;
+    }
+
+    .shore {
+      position: absolute;
+      left: -5%;
+      right: -5%;
+      bottom: -8%;
+      height: 34%;
+      background: #f8d78c;
+      border-radius: 48% 48% 0 0 / 30% 30% 0 0;
+      box-shadow: inset 0 18px rgba(255, 244, 190, .45);
+      transform: rotate(-2deg);
+    }
+
+    .shore::before,
+    .shore::after {
+      content: "";
+      position: absolute;
+      width: 230px;
+      height: 38px;
+      border-radius: 50%;
+      border-top: 5px solid rgba(255,255,255,.5);
+      transform: rotate(-8deg);
+    }
+
+    .shore::before { left: 9%; top: 35%; }
+    .shore::after { right: 13%; top: 48%; width: 190px; transform: rotate(8deg); }
+
+    .title {
+      position: absolute;
+      top: 8%;
+      left: 7%;
+      margin: 0;
+      color: var(--deep);
+      font-size: 2.9rem;
+      letter-spacing: 0;
+      font-weight: 900;
+      line-height: 1.15;
+      text-shadow: 2px 3px 0 rgba(255,255,255,.55);
+    }
+
+    .subtitle {
+      position: absolute;
+      top: calc(8% + 58px);
+      left: 7.4%;
+      margin: 0;
+      color: #27617a;
+      font-size: 1rem;
+      letter-spacing: 0;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .ride-wrap {
+      --ride-scale: 1;
+      --ride-x: -47%;
+      --ride-y: -34%;
+      position: absolute;
+      width: 480px;
+      height: 350px;
+      left: 50%;
+      top: 50%;
+      animation: bob 1.08s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .bike {
+      position: absolute;
+      width: 340px;
+      height: 188px;
+      left: 95px;
+      bottom: 17px;
+      filter: drop-shadow(0 15px 10px rgba(20, 83, 104, .2));
+    }
+
+    .wheel {
+      position: absolute;
+      bottom: 0;
+      width: 118px;
+      height: 118px;
+      border: 8px solid var(--ink);
+      border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, rgba(23,50,77,.2) 0 2deg, transparent 2deg 30deg);
+      box-shadow: inset 0 0 0 5px rgba(255,255,255,.42);
+      animation: wheelSpin .95s linear infinite;
+      will-change: transform;
+    }
+
+    .wheel::before,
+    .wheel::after {
+      content: "";
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 3px;
+      height: 108px;
+      background: rgba(23,50,77,.52);
+      transform: translate(-50%, -50%);
+    }
+
+    .wheel::after { transform: translate(-50%, -50%) rotate(90deg); }
+    .wheel.front { right: 0; }
+    .wheel.back { left: 0; }
+
+    .frame {
+      position: absolute;
+      left: 52px;
+      right: 54px;
+      top: 35px;
+      height: 96px;
+      border: 8px solid var(--coral);
+      border-top-color: transparent;
+      border-radius: 8px 8px 50% 40%;
+      transform: skewX(-8deg);
+    }
+
+    .frame::before,
+    .frame::after {
+      content: "";
+      position: absolute;
+      height: 8px;
+      background: var(--coral);
+      transform-origin: left center;
+    }
+
+    .frame::before { width: 122px; left: 49px; top: -3px; transform: rotate(35deg); }
+    .frame::after { width: 111px; left: 87px; top: 87px; transform: rotate(-33deg); }
+
+    .handlebar {
+      position: absolute;
+      right: 31px;
+      top: 21px;
+      width: 38px;
+      height: 34px;
+      border-top: 8px solid var(--ink);
+      border-right: 8px solid var(--ink);
+      border-radius: 0 18px 0 0;
+      transform: rotate(11deg);
+    }
+
+    .handlebar::after {
+      content: "";
+      position: absolute;
+      width: 32px;
+      height: 8px;
+      right: -7px;
+      top: -7px;
+      border-radius: 10px;
+      background: var(--ink);
+      transform: rotate(-29deg);
+    }
+
+    .seat {
+      position: absolute;
+      left: 111px;
+      top: 16px;
+      width: 58px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--ink);
+    }
+
+    .seat::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: 26px;
+      width: 8px;
+      height: 48px;
+      background: var(--ink);
+      transform: rotate(8deg);
+      transform-origin: top;
+    }
+
+    .crank {
+      position: absolute;
+      left: 147px;
+      top: 111px;
+      width: 18px;
+      height: 18px;
+      border: 5px solid var(--ink);
+      border-radius: 50%;
+    }
+
+    .crank::before,
+    .crank::after {
+      content: "";
+      position: absolute;
+      width: 52px;
+      height: 6px;
+      top: 1px;
+      left: 5px;
+      border-radius: 6px;
+      background: var(--ink);
+      transform-origin: left center;
+      transform: rotate(28deg);
+    }
+
+    .crank::after { transform: rotate(208deg); }
+
+    .pelican {
+      position: absolute;
+      left: 108px;
+      top: 22px;
+      width: 255px;
+      height: 245px;
+      transform: rotate(-3deg);
+      transform-origin: 48% 92%;
+      animation: riderSway 1.08s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .pelican .body {
+      position: absolute;
+      left: 49px;
+      top: 85px;
+      width: 115px;
+      height: 130px;
+      border-radius: 58% 53% 46% 44%;
+      background: #fffdf3;
+      border: 5px solid var(--ink);
+      transform: rotate(8deg);
+      box-shadow: inset -12px -10px 0 rgba(216, 229, 220, .85);
+    }
+
+    .pelican .wing {
+      position: absolute;
+      left: 34px;
+      top: 102px;
+      width: 108px;
+      height: 82px;
+      border-radius: 70% 25% 70% 35%;
+      background: #dce9e1;
+      border: 5px solid var(--ink);
+      transform: rotate(27deg);
+      transform-origin: 90% 15%;
+      animation: flap .72s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+
+    .pelican .wing::after {
+      content: "";
+      position: absolute;
+      left: 17px;
+      bottom: 13px;
+      width: 64px;
+      height: 4px;
+      border-radius: 5px;
+      background: rgba(23,50,77,.3);
+      box-shadow: 0 11px rgba(23,50,77,.22), 0 22px rgba(23,50,77,.18);
+      transform: rotate(-22deg);
+    }
+
+    .pelican .neck {
+      position: absolute;
+      left: 107px;
+      top: 36px;
+      width: 64px;
+      height: 104px;
+      border: 5px solid var(--ink);
+      border-bottom: 0;
+      border-radius: 40px 38px 0 0;
+      background: #fffdf3;
+      transform: rotate(18deg);
+      z-index: 2;
+    }
+
+    .pelican .head {
+      position: absolute;
+      left: 117px;
+      top: 7px;
+      width: 89px;
+      height: 83px;
+      border-radius: 55% 48% 50% 44%;
+      background: #fffdf3;
+      border: 5px solid var(--ink);
+      transform: rotate(12deg);
+      z-index: 3;
+      box-shadow: inset -8px -6px 0 rgba(216,229,220,.75);
+    }
+
+    .head::before {
+      content: "";
+      position: absolute;
+      right: 16px;
+      top: 18px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--ink);
+      box-shadow: 3px 3px 0 #fff;
+    }
+
+    .head::after {
+      content: "";
+      position: absolute;
+      right: -88px;
+      top: 38px;
+      width: 114px;
+      height: 34px;
+      border-radius: 80% 22% 75% 30%;
+      background: #ffb15e;
+      border: 5px solid var(--ink);
+      transform: rotate(11deg);
+      transform-origin: left center;
+      box-shadow: inset -6px -6px 0 rgba(233,127,73,.35);
+    }
+
+    .head .pouch {
+      position: absolute;
+      right: -37px;
+      top: 52px;
+      width: 72px;
+      height: 36px;
+      border-radius: 12px 52% 52% 62%;
+      background: #ff996d;
+      border: 5px solid var(--ink);
+      border-top-color: transparent;
+      transform: rotate(10deg);
+      z-index: 4;
+    }
+
+    .head .blush {
+      position: absolute;
+      right: 34px;
+      top: 44px;
+      width: 13px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffaaa0;
+    }
+
+    .leg {
+      position: absolute;
+      width: 14px;
+      height: 75px;
+      border-radius: 10px;
+      background: #f39a4e;
+      border: 4px solid var(--ink);
+      transform-origin: top center;
+      z-index: 1;
+    }
+
+    .leg.back { left: 108px; top: 183px; transform: rotate(31deg); animation: pedalBack .95s linear infinite; }
+    .leg.front { left: 142px; top: 184px; transform: rotate(-25deg); animation: pedalFront .95s linear infinite; }
+
+    .foot {
+      position: absolute;
+      width: 39px;
+      height: 13px;
+      border-radius: 50% 55% 55% 40%;
+      background: #f39a4e;
+      border: 4px solid var(--ink);
+      transform-origin: left center;
+    }
+
+    .leg.back .foot { bottom: -4px; left: -15px; transform: rotate(-13deg); }
+    .leg.front .foot { bottom: -4px; left: -12px; transform: rotate(13deg); }
+
+    .feather {
+      position: absolute;
+      width: 22px;
+      height: 12px;
+      border-radius: 100% 0 100% 0;
+      border-top: 4px solid var(--ink);
+      transform: rotate(-24deg);
+      opacity: .55;
+    }
+
+    .feather.f1 { left: 75px; top: 113px; }
+    .feather.f2 { left: 84px; top: 129px; transform: rotate(-10deg); }
+    .feather.f3 { left: 76px; top: 145px; transform: rotate(4deg); }
+
+    .speed {
+      position: absolute;
+      left: 11%;
+      bottom: 23%;
+      width: 150px;
+      height: 70px;
+      opacity: .62;
+    }
+
+    .speed span {
+      position: absolute;
+      right: 0;
+      height: 4px;
+      border-radius: 10px;
+      background: #fff;
+      animation: speed 1.15s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .speed span:nth-child(1) { top: 8px; width: 106px; }
+    .speed span:nth-child(2) { top: 29px; width: 150px; animation-delay: -.35s; }
+    .speed span:nth-child(3) { top: 50px; width: 74px; animation-delay: -.72s; }
+
+    .caption {
+      position: absolute;
+      right: 6%;
+      bottom: calc(7% + var(--safe-bottom));
+      max-width: 34%;
+      padding: 10px 15px;
+      border-radius: 99px;
+      color: #236175;
+      background: rgba(255,255,255,.62);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      font-size: 13px;
+      letter-spacing: 0;
+      font-weight: 800;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .toggle {
+      position: absolute;
+      left: 7%;
+      bottom: calc(7% + var(--safe-bottom));
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      min-height: 44px;
+      padding: 11px 16px;
+      border-radius: 99px;
+      color: var(--deep);
+      background: rgba(255,255,255,.72);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 5px 14px rgba(25, 87, 105, .13);
+      transition: transform .2s ease, background .2s ease;
+      touch-action: manipulation;
+    }
+
+    .toggle:hover { transform: translateY(-2px); background: #fff; }
+    .toggle:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+    .toggle:disabled { cursor: not-allowed; opacity: .72; }
+    .toggle .dot { width: 9px; height: 9px; border-radius: 50%; background: #39c88a; box-shadow: 0 0 0 5px rgba(57,200,138,.16); }
+    .paused * { animation-play-state: paused !important; }
+
+    @keyframes wheelSpin { to { transform: rotate(360deg); } }
+    @keyframes bob {
+      0%,100% { transform: translate(var(--ride-x), var(--ride-y)) scale(var(--ride-scale)); }
+      50% { transform: translate(var(--ride-x), calc(var(--ride-y) - 7px)) scale(var(--ride-scale)); }
+    }
+    @keyframes riderSway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(1deg); } }
+    @keyframes flap { from { transform: rotate(27deg); } to { transform: rotate(42deg) translate(-2px, 3px); } }
+    @keyframes pedalBack { to { transform: rotate(391deg); } }
+    @keyframes pedalFront { to { transform: rotate(335deg); } }
+    @keyframes drift { from { transform: translateX(-20vw) scale(var(--cloud-scale)); } to { transform: translateX(130vw) scale(var(--cloud-scale)); } }
+    @keyframes speed { 0%,100% { transform: translateX(24px); opacity: 0; } 30%,75% { transform: translateX(0); opacity: 1; } }
+    @keyframes sunPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+    @media (max-width: 680px) {
+      .scene {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .ride-wrap { --ride-x: -50%; --ride-y: -30%; --ride-scale: .77; }
+      .title { top: 6%; left: 6%; font-size: 1.8rem; }
+      .subtitle { top: calc(6% + 42px); left: 6.4%; font-size: .875rem; }
+      .sun { width: 100px; }
+      .caption {
+        left: 5%;
+        right: 5%;
+        bottom: calc(4% + 54px + var(--safe-bottom));
+        max-width: none;
+        font-size: .75rem;
+      }
+      .toggle {
+        left: 5%;
+        right: 5%;
+        bottom: calc(4% + var(--safe-bottom));
+        justify-content: center;
+        font-size: .75rem;
+      }
+      .speed { left: 3%; bottom: 25%; transform: scale(.72); transform-origin: left center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene" id="scene" aria-label="一只鹈鹕在海边骑自行车的动画场景">
+    <div class="sun" aria-hidden="true"></div>
+    <div class="cloud one" aria-hidden="true"><i class="puff"></i></div>
+    <div class="cloud two" aria-hidden="true"><i class="puff"></i></div>
+    <div class="horizon" aria-hidden="true"></div>
+    <div class="shore" aria-hidden="true"></div>
+
+    <h1 class="title">鹈鹕骑行日</h1>
+    <p class="subtitle">沿着海风，轻快出发</p>
+
+    <div class="speed" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <div class="ride-wrap">
+      <div class="pelican" aria-hidden="true">
+        <div class="neck"></div>
+        <div class="body"></div>
+        <div class="wing"></div>
+        <div class="head"><span class="pouch"></span><span class="blush"></span></div>
+        <div class="feather f1"></div><div class="feather f2"></div><div class="feather f3"></div>
+        <div class="leg back"><span class="foot"></span></div>
+        <div class="leg front"><span class="foot"></span></div>
+      </div>
+
+      <div class="bike" aria-hidden="true">
+        <div class="wheel back"></div>
+        <div class="wheel front"></div>
+        <div class="frame"></div>
+        <div class="seat"></div>
+        <div class="handlebar"></div>
+        <div class="crank"></div>
+      </div>
+    </div>
+
+    <button class="toggle" id="toggle" type="button" aria-controls="scene" aria-pressed="false">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="toggle-label">暂停动画</span>
+    </button>
+    <div class="caption">海风速度：轻盈模式</div>
+  </main>
+
+  <script>
+    const scene = document.getElementById('scene');
+    const toggle = document.getElementById('toggle');
+    const label = toggle.querySelector('.toggle-label');
+    const dot = toggle.querySelector('.dot');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function syncToggle(paused, reduced = false) {
+      toggle.setAttribute('aria-pressed', String(paused));
+      toggle.disabled = reduced;
+      label.textContent = reduced ? '已减少动态' : (paused ? '继续动画' : '暂停动画');
+      dot.style.background = paused || reduced ? '#ff806f' : '#39c88a';
+    }
+
+    function applyMotionPreference() {
+      if (reducedMotion.matches) {
+        scene.classList.add('paused');
+        syncToggle(true, true);
+        return;
+      }
+
+      scene.classList.remove('paused');
+      syncToggle(false);
+    }
+
+    applyMotionPreference();
+    reducedMotion.addEventListener?.('change', applyMotionPreference);
+
+    toggle.addEventListener('click', () => {
+      if (reducedMotion.matches) return;
+      const paused = scene.classList.toggle('paused');
+      syncToggle(paused);
+    });
+  </script>
+</body>
+</html>

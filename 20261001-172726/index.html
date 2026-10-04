@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鹈鹕骑行日</title>
+<style>
+  :root{
+    --ink:#17324d;
+    --cream:#fff8e7;
+    --water:#4da8bf;
+    --road:#f3c978;
+    --accent:#ef7b4d;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    display:grid;place-items:center;overflow:hidden;
+    background:#0f2136;color:var(--ink);
+    font-family:ui-rounded,"SF Pro Rounded","PingFang SC",system-ui,sans-serif;
+  }
+  .wrap{
+    width:min(100vw,1100px);padding:18px;
+    filter:drop-shadow(0 18px 32px rgba(0,0,0,.28));
+  }
+  .card{
+    position:relative;overflow:hidden;border-radius:28px;
+    background:#bcecf2;border:1px solid rgba(255,255,255,.45);
+  }
+  svg{display:block;width:100%;height:auto;aspect-ratio:16/9}
+  .hud{
+    position:absolute;inset:16px 18px auto 18px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+    pointer-events:none;
+  }
+  .title{
+    padding:12px 16px;border-radius:16px;
+    background:rgba(255,255,255,.72);backdrop-filter:blur(10px);
+    box-shadow:0 6px 18px rgba(40,77,95,.12);
+  }
+  .title strong{display:block;font-size:clamp(16px,2.2vw,24px);letter-spacing:.03em}
+  .title span{display:block;margin-top:3px;font-size:12px;opacity:.68}
+  .controls{
+    pointer-events:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end;
+    padding:9px 11px;border-radius:16px;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);
+  }
+  button{
+    border:0;border-radius:10px;padding:8px 11px;cursor:pointer;
+    color:#fff;background:var(--ink);font:600 12px inherit;
+    transition:transform .18s ease,background .18s ease;
+  }
+  button:hover{transform:translateY(-1px);background:#285271}
+  button:active{transform:translateY(0)}
+  label{font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+  input[type=range]{width:82px;accent-color:var(--accent)}
+  .metric{
+    position:absolute;left:18px;bottom:16px;
+    padding:8px 11px;border-radius:12px;font-size:12px;
+    background:rgba(255,255,255,.66);backdrop-filter:blur(8px);
+  }
+  .metric b{font-size:16px;color:var(--accent)}
+  .cloud{animation:drift 26s linear infinite}
+  .cloud.slow{animation-duration:38s;animation-delay:-14s}
+  .cloud.fast{animation-duration:20s;animation-delay:-8s}
+  .wave{animation:wave 4s ease-in-out infinite}
+  .wave.w2{animation-delay:-2s;opacity:.55}
+  .wheel{transform-box:fill-box;transform-origin:center;animation:spin .95s linear infinite}
+  .wing{transform-box:fill-box;transform-origin:78% 72%;animation:flap 1.2s ease-in-out infinite}
+  .body-bob{transform-box:fill-box;transform-origin:center;animation:bob 1.55s ease-in-out infinite}
+  .head-bob{transform-box:fill-box;transform-origin:bottom center;animation:headbob 1.55s ease-in-out infinite}
+  .leg-a{transform-box:fill-box;transform-origin:top center;animation:pedalA .95s linear infinite}
+  .leg-b{transform-box:fill-box;transform-origin:top center;animation:pedalB .95s linear infinite}
+  .blink{animation:blink 5.5s ease-in-out infinite}
+  .dust{animation:dust 1.1s ease-out infinite}
+  .dust.d2{animation-delay:-.42s}.dust.d3{animation-delay:-.75s}
+  .roadmark{animation:road 1.1s linear infinite}
+  .roadmark.r2{animation-delay:-.55s}
+  .status-dot{fill:#3ac47b;animation:ping 1.4s ease-in-out infinite}
+  .paused .cloud,.paused .wave,.paused .wheel,.paused .wing,.paused .body-bob,.paused .head-bob,
+  .paused .leg-a,.paused .leg-b,.paused .blink,.paused .dust,.paused .roadmark,.paused .status-dot{animation-play-state:paused}
+  @keyframes drift{from{transform:translateX(-180px)}to{transform:translateX(1060px)}}
+  @keyframes wave{0%,100%{transform:translateX(0)}50%{transform:translateX(13px)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes flap{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(9deg)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  @keyframes headbob{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(2deg)}}
+  @keyframes pedalA{0%{transform:rotate(20deg)}50%{transform:rotate(-24deg)}100%{transform:rotate(20deg)}}
+  @keyframes pedalB{0%{transform:rotate(-24deg)}50%{transform:rotate(20deg)}100%{transform:rotate(-24deg)}}
+  @keyframes blink{0%,45%,49%,100%{transform:scaleY(1)}47%{transform:scaleY(.08)}}
+  @keyframes dust{0%{opacity:0;transform:translate(0,0) scale(.45)}20%{opacity:.7}100%{opacity:0;transform:translate(-28px,-17px) scale(1.35)}}
+  @keyframes road{to{transform:translateX(-120px)}}
+  @keyframes ping{0%,100%{opacity:.45}50%{opacity:1}}
+  @media (max-width:650px){
+    .wrap{padding:8px}.hud{inset:9px}.title span{display:none}
+    .controls{padding:7px}.controls label{display:none}.metric{left:9px;bottom:9px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .cloud,.wave,.wheel,.wing,.body-bob,.head-bob,.leg-a,.leg-b,.blink,.dust,.roadmark,.status-dot{animation:none!important}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="card" id="card" aria-label="动态插画：鹈鹕骑自行车">
+    <svg viewBox="0 0 960 540" role="img" aria-labelledby="sceneTitle sceneDesc">
+      <title id="sceneTitle">鹈鹕骑自行车穿过海边</title>
+      <desc id="sceneDesc">一只白色鹈鹕骑着橙色自行车沿着海边公路前进，云朵、海浪和道路都在移动。</desc>
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#7bd4ed"/><stop offset=".65" stop-color="#c9f1e9"/><stop offset="1" stop-color="#fce3b3"/>
+        </linearGradient>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#5bb8cd"/><stop offset="1" stop-color="#27859f"/>
+        </linearGradient>
+        <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f9d990"/><stop offset="1" stop-color="#e9ad5d"/>
+        </linearGradient>
+        <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+        <filter id="tinyShadow" x="-20%" y="-20%" width="140%" height="150%">
+          <feGaussianBlur stdDeviation="2"/>
+        </filter>
+        <pattern id="grain" width="18" height="18" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1" fill="#fff" opacity=".13"/>
+          <circle cx="12" cy="8" r=".7" fill="#fff" opacity=".1"/>
+          <circle cx="7" cy="15" r=".8" fill="#fff" opacity=".1"/>
+        </pattern>
+      </defs>
+
+      <rect width="960" height="540" fill="url(#sky)"/>
+      <circle cx="776" cy="104" r="58" fill="#fff4bf" opacity=".86"/>
+      <circle cx="776" cy="104" r="88" fill="#fff4bf" opacity=".16"/>
+      <g class="cloud slow" fill="#fff" opacity=".74">
+        <ellipse cx="80" cy="106" rx="62" ry="19"/><ellipse cx="121" cy="91" rx="42" ry="29"/>
+        <ellipse cx="160" cy="108" rx="48" ry="18"/><ellipse cx="108" cy="115" rx="81" ry="15"/>
+      </g>
+      <g class="cloud fast" fill="#fff" opacity=".55">
+        <ellipse cx="610" cy="70" rx="55" ry="16"/><ellipse cx="646" cy="58" rx="34" ry="23"/>
+        <ellipse cx="681" cy="73" rx="44" ry="15"/>
+      </g>
+      <g class="cloud" fill="#fff" opacity=".42">
+        <ellipse cx="352" cy="155" rx="53" ry="14"/><ellipse cx="383" cy="143" rx="31" ry="20"/>
+        <ellipse cx="420" cy="157" rx="48" ry="13"/>
+      </g>
+
+      <path d="M0 270 Q120 235 240 268 T480 258 T720 266 T960 252 V350 H0Z" fill="#7cc9bc" opacity=".72"/>
+      <path d="M0 294 Q145 268 280 293 T540 286 T800 294 T960 278 V385 H0Z" fill="#4ea8bc" opacity=".72"/>
+      <rect y="316" width="960" height="224" fill="url(#sea)"/>
+      <g fill="none" stroke="#a9e7e2" stroke-width="3" stroke-linecap="round">
+        <path class="wave" d="M-30 351 q42 -16 84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0"/>
+        <path class="wave w2" d="M-30 384 q42 -13 84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0"/>
+        <path class="wave" d="M-30 423 q42 -13 84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0"/>
+        <path class="wave w2" d="M-30 468 q42 -13 84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0 t84 0"/>
+      </g>
+
+      <path d="M0 368 Q220 341 424 360 T960 354 V540 H0Z" fill="url(#road)"/>
+      <path d="M0 368 Q220 341 424 360 T960 354" fill="none" stroke="#fff4cc" stroke-width="5" opacity=".72"/>
+      <g fill="#fff1bd" opacity=".75">
+        <rect class="roadmark" x="34" y="440" width="86" height="8" rx="4"/>
+        <rect class="roadmark" x="236" y="423" width="86" height="8" rx="4"/>
+        <rect class="roadmark" x="438" y="411" width="86" height="8" rx="4"/>
+        <rect class="roadmark" x="640" y="410" width="86" height="8" rx="4"/>
+        <rect class="roadmark" x="842" y="416" width="86" height="8" rx="4"/>
+      </g>
+      <g fill="#2a7d72" opacity=".8">
+        <path d="M56 361 q-3 -36 11 -62 q11 31 8 61Z"/><path d="M70 360 q12 -40 34 -52 q-7 36 -29 55Z"/>
+        <path d="M874 357 q-4 -38 12 -67 q10 31 7 67Z"/><path d="M890 357 q14 -39 35 -50 q-7 34 -31 53Z"/>
+      </g>
+
+      <ellipse cx="478" cy="406" rx="142" ry="22" fill="#193e4e" opacity=".22" filter="url(#softShadow)"/>
+
+      <g id="rider" transform="translate(-190 0)">
+        <g id="bike">
+          <g class="wheel" transform="translate(390 382)">
+            <circle r="50" fill="none" stroke="#17324d" stroke-width="7"/>
+            <circle r="42" fill="none" stroke="#ef7b4d" stroke-width="3"/>
+            <g stroke="#17324d" stroke-width="1.8" opacity=".68">
+              <path d="M0-42V42M-42 0H42M-30-30L30 30M30-30L-30 30"/>
+            </g><circle r="6" fill="#17324d"/>
+          </g>
+          <g class="wheel" transform="translate(566 382)">
+            <circle r="50" fill="none" stroke="#17324d" stroke-width="7"/>
+            <circle r="42" fill="none" stroke="#ef7b4d" stroke-width="3"/>
+            <g stroke="#17324d" stroke-width="1.8" opacity=".68">
+              <path d="M0-42V42M-42 0H42M-30-30L30 30M30-30L-30 30"/>
+            </g><circle r="6" fill="#17324d"/>
+          </g>
+          <g fill="none" stroke="#ef7b4d" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M390 382 L449 321 L566 382 L390 382 L501 379 L449 321"/>
+            <path d="M449 321 L436 289"/><path d="M431 289 H458"/>
+            <path d="M566 382 L585 307"/><path d="M585 307 q17 -7 29 2"/>
+          </g>
+          <path d="M423 289 q27 -9 47 0" fill="none" stroke="#17324d" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="501" cy="379" r="10" fill="#17324d"/>
+          <g stroke="#17324d" stroke-width="5" stroke-linecap="round">
+            <path d="M501 379 l-18 17"/><path d="M501 379 l17 13"/>
+          </g>
+          <rect x="420" y="279" width="39" height="8" rx="4" fill="#17324d"/>
+          <path d="M548 305 q22 18 46 4" fill="none" stroke="#17324d" stroke-width="6" stroke-linecap="round"/>
+        </g>
+
+        <g class="body-bob">
+          <ellipse cx="481" cy="245" rx="65" ry="78" fill="#fffdf2" stroke="#17324d" stroke-width="5"/>
+          <path d="M436 250 q-13 44 16 61 q28 14 57 -11 q-36 9 -73 -50Z" fill="#d9e4dc" opacity=".9"/>
+          <g class="wing">
+            <path d="M438 227 q-47 19 -35 71 q26 25 75 3 q-30 -13 -40 -47Z" fill="#e1ebe4" stroke="#17324d" stroke-width="5"/>
+            <path d="M417 274 q27 -5 46 -28" fill="none" stroke="#b2c8c3" stroke-width="4" stroke-linecap="round"/>
+            <path d="M414 283 q28 -4 48 -24" fill="none" stroke="#b2c8c3" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <path d="M451 304 q12 14 28 2" fill="none" stroke="#ef7b4d" stroke-width="8" stroke-linecap="round"/>
+        </g>
+
+        <g class="head-bob">
+          <path d="M447 170 q-1 -59 51 -68 q48 -8 66 37 q10 25 -12 51 q-29 28 -76 9Z" fill="#fffdf2" stroke="#17324d" stroke-width="5"/>
+          <path d="M486 103 q23 -16 49 0 q-17 19 -46 18Z" fill="#d9e4dc"/>
+          <path d="M547 137 q77 -13 129 11 q16 8 0 22 q-57 19 -133 -4Z" fill="#ef7b4d" stroke="#17324d" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M548 151 q62 4 113 11" fill="none" stroke="#d55638" stroke-width="4" stroke-linecap="round"/>
+          <g class="blink" style="transform-origin:524px 134px">
+            <circle cx="524" cy="134" r="9" fill="#17324d"/>
+            <circle cx="527" cy="131" r="3" fill="#fff"/>
+          </g>
+          <path d="M515 117 q18 -10 31 2" fill="none" stroke="#17324d" stroke-width="5" stroke-linecap="round"/>
+        </g>
+
+        <g>
+          <g class="leg-a" style="transform-origin:473px 300px">
+            <path d="M473 298 q4 32 27 80" fill="none" stroke="#ef7b4d" stroke-width="9" stroke-linecap="round"/>
+            <path d="M500 378 l18 13 M500 378 l-5 20" fill="none" stroke="#ef7b4d" stroke-width="7" stroke-linecap="round"/>
+          </g>
+          <g class="leg-b" style="transform-origin:493px 300px">
+            <path d="M493 298 q-3 33 -18 80" fill="none" stroke="#d96143" stroke-width="8" stroke-linecap="round"/>
+            <path d="M475 378 l-17 11 M475 378 l5 19" fill="none" stroke="#d96143" stroke-width="6" stroke-linecap="round"/>
+          </g>
+        </g>
+
+        <g class="dust" fill="#fff1c3">
+          <circle cx="345" cy="400" r="7"/><circle cx="328" cy="405" r="4"/><circle cx="308" cy="412" r="6"/>
+        </g>
+        <g class="dust d2" fill="#fff1c3">
+          <circle cx="343" cy="398" r="5"/><circle cx="325" cy="403" r="3"/>
+        </g>
+        <g class="dust d3" fill="#fff1c3">
+          <circle cx="350" cy="402" r="4"/><circle cx="318" cy="409" r="3"/>
+        </g>
+      </g>
+
+      <rect width="960" height="540" fill="url(#grain)" opacity=".38"/>
+      <g transform="translate(850 44)">
+        <circle class="status-dot" r="6"/><text x="14" y="5" font-size="12" fill="#17324d" opacity=".66">LIVE RIDE</text>
+      </g>
+    </svg>
+
+    <div class="hud">
+      <div class="title"><strong>鹈鹕骑行日</strong><span>海风、车轮和一点点橙色勇气</span></div>
+      <div class="controls">
+        <button id="toggle" type="button">暂停</button>
+        <label>速度 <input id="speed" type="range" min="0.5" max="2.4" step="0.1" value="1"></label>
+        <button id="reset" type="button">重置</button>
+      </div>
+    </div>
+    <div class="metric">今日已骑 <b id="distance">0.0</b> km</div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const card = document.getElementById('card');
+  const rider = document.getElementById('rider');
+  const toggle = document.getElementById('toggle');
+  const reset = document.getElementById('reset');
+  const speed = document.getElementById('speed');
+  const distance = document.getElementById('distance');
+  let running = true;
+  let startedAt = performance.now();
+  let pausedAt = 0;
+  let offset = -190;
+  let last = startedAt;
+  let travelled = 0;
+
+  function setPaused(value) {
+    running = !value;
+    card.classList.toggle('paused', value);
+    toggle.textContent = value ? '继续' : '暂停';
+    if (value) pausedAt = performance.now();
+    else {
+      const now = performance.now();
+      startedAt += now - pausedAt;
+      last = now;
+    }
+  }
+
+  function frame(now) {
+    const dt = Math.min(64, now - last);
+    last = now;
+    if (running) {
+      const factor = Number(speed.value);
+      const width = card.clientWidth || 960;
+      const travelWidth = 960 + 380;
+      offset += dt * 0.095 * factor;
+      travelled += dt * 0.000021 * factor;
+      if (offset > 980) offset = -190;
+      rider.setAttribute('transform', 'translate(' + offset.toFixed(2) + ' 0)');
+      distance.textContent = travelled.toFixed(1);
+      card.style.setProperty('--ride-width', width + 'px');
+    }
+    requestAnimationFrame(frame);
+  }
+
+  toggle.addEventListener('click', () => setPaused(running));
+  reset.addEventListener('click', () => {
+    offset = -190;
+    travelled = 0;
+    distance.textContent = '0.0';
+    if (!running) setPaused(false);
+  });
+  speed.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--ride-speed', speed.value);
+  });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

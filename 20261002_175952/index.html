@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚴 鹈鹕骑自行车</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;background:radial-gradient(1200px 620px at 50% -120px,#33547f,#1b2a44 60%,#131d2f);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;overflow:hidden}
+h1{color:#fff;font-size:clamp(18px,3vw,28px);font-weight:700;letter-spacing:2px;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+.stage{width:min(96vw,980px);border-radius:20px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 6px rgba(255,255,255,.06)}
+svg{display:block;width:100%;height:auto}
+.controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);padding:10px 18px;border-radius:14px;backdrop-filter:blur(6px)}
+.controls button{cursor:pointer;border:none;border-radius:10px;padding:9px 18px;font-size:15px;font-weight:700;background:#ffd93d;color:#5a4300;transition:transform .12s,box-shadow .12s}
+.controls button:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.35)}
+.controls button.honk{background:#ff8a5c;color:#5c1f00}
+.slider-wrap{display:flex;align-items:center;gap:9px;color:#fff;font-size:14px}
+input[type=range]{width:170px;accent-color:#ffd93d;cursor:pointer}
+#speedLabel{min-width:66px;color:#ffd93d;font-weight:700;font-variant-numeric:tabular-nums}
+.hint{color:rgba(255,255,255,.55);font-size:12.5px;letter-spacing:1px}
+</style>
+</head>
+<body>
+<h1>🚴 鹈鹕骑自行车 · 兜风时间</h1>
+<div class="stage">
+<svg id="scene" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="一只戴头盔的鹈鹕在乡间公路上骑自行车">
+<defs>
+<linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#8fd3f4"/><stop offset="0.7" stop-color="#cdeafd"/><stop offset="1" stop-color="#e9f8ff"/>
+</linearGradient>
+<linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e2d2"/>
+</linearGradient>
+</defs>
+<rect width="900" height="460" fill="url(#skyGrad)"/>
+<g id="sunG">
+<circle cx="108" cy="86" r="48" fill="#ffe27a" opacity="0.35"/>
+<circle cx="108" cy="86" r="34" fill="#ffd93d"/>
+<g id="sunRays"></g>
+</g>
+<g id="cloudsG"></g>
+<g id="birdsG"></g>
+<g id="hillsFarG"></g>
+<g id="hillsNearG"></g>
+<rect x="0" y="444" width="900" height="18" fill="#6fc26b"/>
+<g id="tuftsG"></g>
+<rect x="0" y="460" width="900" height="100" fill="#59616f"/>
+<rect x="0" y="460" width="900" height="4" fill="#c8d2de"/>
+<rect x="0" y="552" width="900" height="8" fill="#454c59"/>
+<g id="dashesG"></g>
+<ellipse id="shadow" cx="450" cy="504" rx="245" ry="11" fill="rgba(20,25,40,0.16)"/>
+<g id="rider">
+<line id="crankFar" stroke="#4a5060" stroke-width="7" stroke-linecap="round"/>
+<g id="pedalFar"><rect x="-14" y="-4" width="28" height="8" rx="2.5" fill="#23252e"/></g>
+<path id="legFar" fill="none" stroke="#d4852a" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<g id="footFar"><path d="M-16,0 L8,-3 L20,6 L-8,6 Z" fill="#e09b1f"/></g>
+<g id="bikeG">
+<g id="wheelR">
+<circle cx="285" cy="442" r="58" fill="none" stroke="#23252e" stroke-width="11"/>
+<circle cx="285" cy="442" r="50" fill="none" stroke="#cdd5e3" stroke-width="5"/>
+<g id="spokesR"></g>
+<circle cx="285" cy="442" r="7" fill="#8a93a5"/>
+</g>
+<g id="wheelF">
+<circle cx="615" cy="442" r="58" fill="none" stroke="#23252e" stroke-width="11"/>
+<circle cx="615" cy="442" r="50" fill="none" stroke="#cdd5e3" stroke-width="5"/>
+<g id="spokesF"></g>
+<circle cx="615" cy="442" r="7" fill="#8a93a5"/>
+</g>
+<g fill="none" stroke="#e0562f" stroke-width="9" stroke-linecap="round">
+<path d="M285,442 L440,440"/>
+<path d="M285,442 L376,336"/>
+<path d="M440,440 L376,330"/>
+<path d="M378,345 L575,318"/>
+<path d="M440,440 L588,378"/>
+<path d="M575,318 L588,378" stroke-width="12"/>
+<path d="M588,378 Q602,412 615,442" stroke-width="7"/>
+<path d="M575,318 L570,302 Q568,292 556,296" stroke-width="7"/>
+</g>
+<line x1="376" y1="336" x2="376" y2="322" stroke="#555c68" stroke-width="6"/>
+<rect x="349" y="315" width="54" height="9" rx="4.5" fill="#3a3f4a"/>
+<line x1="440" y1="420" x2="285" y2="434" stroke="#454b58" stroke-width="3.5"/>
+<line x1="440" y1="460" x2="285" y2="450" stroke="#454b58" stroke-width="3.5"/>
+<circle cx="285" cy="442" r="9" fill="none" stroke="#454b58" stroke-width="4"/>
+<circle cx="440" cy="440" r="20" fill="none" stroke="#454b58" stroke-width="4.5"/>
+<circle cx="440" cy="440" r="6" fill="#454b58"/>
+<circle cx="554" cy="296" r="5.5" fill="#3a3f4a"/>
+</g>
+<g id="pelicanG">
+<g fill="none" stroke="#e9e2d2" stroke-width="11" stroke-linecap="round">
+<path d="M320,254 L254,216"/>
+<path d="M318,268 L244,240"/>
+<path d="M320,282 L252,262"/>
+</g>
+<ellipse cx="388" cy="272" rx="80" ry="54" fill="url(#bodyGrad)" stroke="#d8d0bd" stroke-width="2"/>
+<g id="headG">
+<path d="M428,246 C450,205 462,182 494,164" fill="none" stroke="#fdfcf7" stroke-width="21" stroke-linecap="round"/>
+<circle cx="498" cy="148" r="24" fill="#fdfcf7"/>
+<path id="pouch" d="M508,158 C514,198 554,214 592,199 C622,187 650,172 664,164 C638,172 598,180 560,177 C530,173 512,167 508,158 Z" fill="#f7b733" stroke="#e09b1f" stroke-width="2"/>
+<g id="upperBeak">
+<path d="M512,142 L666,156 Q673,160 665,165 L512,159 Q505,151 512,142 Z" fill="#f5a623" stroke="#d98f1a" stroke-width="2"/>
+<line x1="524" y1="149" x2="548" y2="152" stroke="#d98f1a" stroke-width="2" stroke-linecap="round"/>
+</g>
+<g id="eyeG">
+<circle cx="508" cy="145" r="4.6" fill="#26282e"/>
+<circle cx="509.6" cy="143.4" r="1.6" fill="#fff"/>
+</g>
+<path d="M474,146 Q474,114 498,112 Q522,114 522,146 Q498,134 474,146 Z" fill="#34495e" stroke="#2c3a4b" stroke-width="2"/>
+<line x1="498" y1="115" x2="498" y2="137" stroke="#ffd93d" stroke-width="4" stroke-linecap="round"/>
+<path d="M480,148 Q490,158 494,166" fill="none" stroke="#2c3a4b" stroke-width="2"/>
+<g id="fishG" opacity="0">
+<ellipse cx="595" cy="145" rx="14" ry="6" fill="#7fd1f0" stroke="#57a8c9" stroke-width="1.5"/>
+<path d="M607,145 L618,138 L618,152 Z" fill="#57a8c9"/>
+<circle cx="588" cy="143.5" r="1.6" fill="#26323f"/>
+</g>
+<g id="bubbleG" opacity="0">
+<rect x="642" y="94" width="76" height="36" rx="11" fill="#fff" stroke="#c9d4de" stroke-width="2"/>
+<path d="M660,128 L650,142 L672,130 Z" fill="#fff" stroke="#c9d4de" stroke-width="2"/>
+<text x="680" y="118" text-anchor="middle" font-size="17" font-weight="bold" fill="#e0562f" font-family="PingFang SC, Microsoft YaHei, sans-serif">嘎——!</text>
+</g>
+</g>
+<path d="M426,240 C482,226 534,252 558,292 C544,306 502,300 468,290 C442,282 428,262 426,240 Z" fill="#f4efe1" stroke="#d8d0bd" stroke-width="2"/>
+<path d="M466,280 Q506,292 544,294" fill="none" stroke="#d8d0bd" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M458,268 Q504,280 550,288" fill="none" stroke="#d8d0bd" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="556" cy="293" r="7" fill="#f4efe1" stroke="#d8d0bd" stroke-width="2"/>
+<circle cx="458" cy="192" r="6.5" fill="#ff5f5f"/>
+<path id="scarfPath" fill="#ff5f5f" stroke="#e04848" stroke-width="1.5"/>
+</g>
+<line id="crankNear" stroke="#2b2f3a" stroke-width="7" stroke-linecap="round"/>
+<g id="pedalNear"><rect x="-14" y="-4" width="28" height="8" rx="2.5" fill="#23252e"/><rect x="-14" y="-4" width="9" height="8" rx="2" fill="#e0562f"/></g>
+<path id="legNear" fill="none" stroke="#f5a623" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<g id="footNear"><path d="M-16,0 L8,-3 L20,6 L-8,6 Z" fill="#f5a623"/><path d="M-13,3 L13,3" stroke="#d98f1a" stroke-width="1.5"/></g>
+</g>
+<g id="fgG"></g>
+</svg>
+</div>
+<div class="controls">
+<button id="btnPause">⏸ 暂停</button>
+<div class="slider-wrap"><span>🐢</span><input type="range" id="speed" min="0" max="2" step="0.05" value="1"><span>🐇</span><span id="speedLabel">18 km/h</span></div>
+<button id="btnHonk" class="honk">📣 按喇叭</button>
+</div>
+<p class="hint">空格键：暂停 / 继续 &nbsp;·&nbsp; H 键或点击画面：按喇叭</p>
+<script>
+'use strict';
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+
+/* ===== 几何常量 ===== */
+const REAR={x:285,y:442},FRONT={x:615,y:442},BB={x:440,y:440};
+const WHEEL_R=58,CRANK=30,LEG=86;
+const HIP_N={x:398,y:312},HIP_F={x:388,y:314};
+const S={speed:1,paused:false,honkAt:-10};
+let t=0,dist=0;
+
+/* ===== 太阳光芒 ===== */
+(function(){const g=$('sunRays');
+for(let k=0;k<12;k++){const a=k*Math.PI/6;
+el('line',{x1:108+44*Math.cos(a),y1:86+44*Math.sin(a),x2:108+56*Math.cos(a),y2:86+56*Math.sin(a),stroke:'#ffcf3d','stroke-width':4,'stroke-linecap':'round'},g);}})();
+
+/* ===== 车轮辐条 ===== */
+function spokes(g,c){
+for(let k=0;k<8;k++){const a=k*Math.PI/4;
+el('line',{x1:c.x+10*Math.cos(a),y1:c.y+10*Math.sin(a),x2:c.x+47*Math.cos(a),y2:c.y+47*Math.sin(a),stroke:'#aab4c6','stroke-width':2.5},g);}
+el('rect',{x:c.x+43,y:c.y-2,width:7,height:4,rx:1.5,fill:'#e0562f'},g);}
+spokes($('spokesR'),REAR);spokes($('spokesF'),FRONT);
+
+/* ===== 山丘（无缝循环） ===== */
+function hill(g,humpW,heights,base,fill){
+let d='M0,'+base;const n=heights.length;
+for(let i=0;i<2*n;i++){d+=' Q'+(i*humpW+humpW/2)+','+(base-heights[i%n])+' '+((i+1)*humpW)+','+base;}
+d+=' L'+(2*n*humpW)+','+(base+40)+' L0,'+(base+40)+' Z';
+el('path',{d:d,fill:fill},g);}
+hill($('hillsFarG'),180,[70,95,60,85,75],460,'#b7e3b0');
+hill($('hillsNearG'),225,[48,66,40,58],460,'#8fce8a');
+
+/* ===== 草带上的草丛与小花 ===== */
+(function(){const g=$('tuftsG');
+for(let i=0;i<15;i++){const x=i*60+(i%3)*7;
+const tuft=el('g',{transform:'translate('+x+',458)'},g);
+el('path',{d:'M0,0 Q-2,-8 -6,-11 M0,0 Q0,-10 0,-13 M0,0 Q2,-8 6,-11',fill:'none',stroke:'#4d9e4d','stroke-width':2.2,'stroke-linecap':'round'},tuft);
+if(i%4===0)el('circle',{cx:3,cy:-16,r:2.6,fill:(i%8===0?'#ffd1e8':'#fff')},tuft);}})();
+
+/* ===== 近景草丛（更快视差） ===== */
+(function(){const g=$('fgG');
+for(let i=0;i<5;i++){
+el('path',{d:'M0,0 Q-4,-16 -12,-24 M0,0 Q0,-22 1,-30 M0,0 Q5,-16 13,-24',fill:'none',stroke:'#33532f','stroke-width':4,'stroke-linecap':'round',transform:'translate('+(i*180+30)+',562)'},g);}})();
+
+/* ===== 路面虚线 ===== */
+(function(){const g=$('dashesG');
+for(let k=0;k<=9;k++)el('rect',{x:k*120,y:502,width:58,height:6,rx:3,fill:'#eef2f7'},g);})();
+
+/* ===== 云朵 ===== */
+const clouds=[{x:120,y:78,s:1.15,v:9},{x:430,y:52,s:0.85,v:13},{x:690,y:108,s:1.0,v:11},{x:855,y:66,s:0.75,v:15}];
+clouds.forEach(c=>{const g=el('g',{},$('cloudsG'));c.g=g;g.setAttribute('opacity','0.92');
+el('ellipse',{cx:0,cy:0,rx:42,ry:17,fill:'#fff'},g);
+el('ellipse',{cx:-30,cy:6,rx:25,ry:12,fill:'#fff'},g);
+el('ellipse',{cx:30,cy:6,rx:27,ry:13,fill:'#fff'},g);
+el('ellipse',{cx:2,cy:-9,rx:24,ry:13,fill:'#fff'},g);});
+
+/* ===== 远处飞鸟 ===== */
+const birds=[{x:180,y:120,ph:0},{x:520,y:88,ph:2},{x:760,y:150,ph:4}];
+birds.forEach(b=>{b.p=el('path',{fill:'none',stroke:'#3f4756','stroke-width':2.4,'stroke-linecap':'round'},$('birdsG'));});
+/* ===== 动画与交互 ===== */
+let hillFarOff=0,hillNearOff=0,tuftOff=0,dashOff=0,fgOff=0;
+function setRot(g,c,rad){g.setAttribute('transform','rotate('+(rad*180/Math.PI).toFixed(2)+' '+c.x+' '+c.y+')');}
+
+/* 两段式腿骨 IK：髋 -> 膝 -> 脚踏板 */
+function drawLeg(pathEl,hip,foot){
+  let dx=foot.x-hip.x,dy=foot.y-hip.y,d=Math.hypot(dx,dy)||1;
+  const maxD=LEG*2-4;
+  if(d>maxD){dx*=maxD/d;dy*=maxD/d;d=maxD;}
+  const base=Math.atan2(dy,dx);
+  const half=Math.acos(Math.min(1,d/(2*LEG)));
+  const c1=base-half,c2=base+half;
+  const ax=hip.x+LEG*Math.cos(c1),ay=hip.y+LEG*Math.sin(c1);
+  const bx=hip.x+LEG*Math.cos(c2),by=hip.y+LEG*Math.sin(c2);
+  const fwd=ax>=bx;
+  const kx=fwd?ax:bx,ky=fwd?ay:by;
+  pathEl.setAttribute('d','M'+hip.x+','+hip.y+' L'+kx.toFixed(1)+','+ky.toFixed(1)+' L'+(hip.x+dx).toFixed(1)+','+(hip.y+dy).toFixed(1));
+}
+
+function update(dt){
+  const v=330*S.speed;
+  dist+=v*dt;t+=dt;
+  const wheelA=dist/WHEEL_R,crankA=dist/WHEEL_R*0.55;
+  setRot($('spokesR'),REAR,wheelA);
+  setRot($('spokesF'),FRONT,wheelA);
+  const pn={x:BB.x+CRANK*Math.cos(crankA),y:BB.y+CRANK*Math.sin(crankA)};
+  const pf={x:BB.x-CRANK*Math.cos(crankA),y:BB.y-CRANK*Math.sin(crankA)};
+  const cf=$('crankFar'),cn=$('crankNear');
+  cf.setAttribute('x1',BB.x);cf.setAttribute('y1',BB.y);cf.setAttribute('x2',pf.x.toFixed(1));cf.setAttribute('y2',pf.y.toFixed(1));
+  cn.setAttribute('x1',BB.x);cn.setAttribute('y1',BB.y);cn.setAttribute('x2',pn.x.toFixed(1));cn.setAttribute('y2',pn.y.toFixed(1));
+  $('pedalFar').setAttribute('transform','translate('+pf.x.toFixed(1)+','+pf.y.toFixed(1)+')');
+  $('pedalNear').setAttribute('transform','translate('+pn.x.toFixed(1)+','+pn.y.toFixed(1)+')');
+  drawLeg($('legFar'),HIP_F,pf);
+  drawLeg($('legNear'),HIP_N,pn);
+  $('footFar').setAttribute('transform','translate('+pf.x.toFixed(1)+','+pf.y.toFixed(1)+') rotate('+(Math.sin(crankA+Math.PI)*8).toFixed(1)+')');
+  $('footNear').setAttribute('transform','translate('+pn.x.toFixed(1)+','+pn.y.toFixed(1)+') rotate('+(Math.sin(crankA)*8).toFixed(1)+')');
+
+  /* 身体随踩踏起伏 */
+  const bob=Math.sin(crankA)*2.4,rot=Math.sin(crankA+0.5)*1.6;
+  $('pelicanG').setAttribute('transform','translate(0 '+bob.toFixed(2)+') rotate('+rot.toFixed(2)+' 388 300)');
+
+  /* 喇叭/张嘴动作 */
+  const hk=(t-S.honkAt)/0.9;
+  const open=(hk>=0&&hk<=1)?Math.sin(hk*Math.PI):0;
+  $('headG').setAttribute('transform','rotate('+(Math.sin(crankA-0.7)*2.5-8*open).toFixed(2)+' 460 200)');
+  $('upperBeak').setAttribute('transform','rotate('+(-13*open).toFixed(2)+' 514 150)');
+  $('pouch').setAttribute('transform','translate(510 172) scale(1 '+(1+0.2*open).toFixed(3)+') translate(-510 -172)');
+  $('fishG').setAttribute('opacity',open.toFixed(2));
+  $('fishG').setAttribute('transform','translate(0 '+(-26*open).toFixed(1)+') rotate('+(-10*open).toFixed(1)+' 595 145)');
+  $('bubbleG').setAttribute('opacity',(open*0.96).toFixed(2));
+  $('bubbleG').setAttribute('transform','translate(0 '+(-4*open).toFixed(1)+')');
+
+  /* 眨眼 */
+  const bp=t%4.3;let sy=1;
+  if(bp>4.05){const p=(bp-4.05)/0.25;sy=Math.abs(p-0.5)*2*0.92+0.08;}
+  $('eyeG').setAttribute('transform','translate(508 145) scale(1 '+sy.toFixed(2)+') translate(-508 -145)');
+
+  /* 飘动的围巾 */
+  const n=9,ax=458,ay=190,pts=[];
+  for(let i=0;i<=n;i++){const u=i/n;pts.push({x:ax-u*152,y:ay+u*24+Math.sin(t*7-u*4.2)*u*15,w:(1-u)*10+3});}
+  let d='M'+pts[0].x.toFixed(1)+','+(pts[0].y-pts[0].w).toFixed(1);
+  for(const p of pts)d+=' L'+p.x.toFixed(1)+','+(p.y-p.w).toFixed(1);
+  for(let i=n;i>=0;i--){const p=pts[i];d+=' L'+p.x.toFixed(1)+','+(p.y+p.w).toFixed(1);}
+  $('scarfPath').setAttribute('d',d+' Z');
+
+  /* 视差背景 */
+  hillFarOff=(hillFarOff+v*0.16*dt)%900;
+  hillNearOff=(hillNearOff+v*0.38*dt)%900;
+  tuftOff=(tuftOff+v*dt)%900;
+  dashOff=(dashOff+v*dt)%120;
+  fgOff=(fgOff+v*1.15*dt)%900;
+  $('hillsFarG').setAttribute('transform','translate('+(-hillFarOff).toFixed(1)+' 0)');
+  $('hillsNearG').setAttribute('transform','translate('+(-hillNearOff).toFixed(1)+' 0)');
+  $('tuftsG').setAttribute('transform','translate('+(-tuftOff).toFixed(1)+' 0)');
+  $('dashesG').setAttribute('transform','translate('+(-dashOff).toFixed(1)+' 0)');
+  $('fgG').setAttribute('transform','translate('+(-fgOff).toFixed(1)+' 0)');
+  $('sunRays').setAttribute('transform','rotate('+(t*7%360).toFixed(1)+' 108 86)');
+
+  for(const c of clouds){
+    c.x-=(c.v+S.speed*7)*dt;
+    if(c.x<-120)c.x=1020;
+    c.g.setAttribute('transform','translate('+c.x.toFixed(1)+' '+c.y+') scale('+c.s+')');
+  }
+  for(const b of birds){
+    b.x-=(15+S.speed*7)*dt;
+    if(b.x<-30)b.x=930;
+    const w=7+5*Math.sin(t*9+b.ph);
+    b.p.setAttribute('d','M'+(b.x-13).toFixed(1)+','+(b.y-w).toFixed(1)+' Q'+(b.x-6).toFixed(1)+','+b.y+' '+b.x+','+b.y+' Q'+(b.x+6).toFixed(1)+','+b.y+' '+(b.x+13).toFixed(1)+','+(b.y-w).toFixed(1));
+  }
+}
+
+let last=0;
+function loop(ts){
+  const dt=Math.min(0.05,last?(ts-last)/1000:0.016);
+  last=ts;
+  if(!S.paused)update(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ===== 控件与快捷键 ===== */
+const btnPause=$('btnPause'),btnHonk=$('btnHonk'),slider=$('speed'),speedLabel=$('speedLabel');
+function togglePause(){S.paused=!S.paused;btnPause.textContent=S.paused?'▶ 继续':'⏸ 暂停';}
+function honk(){S.honkAt=t;}
+btnPause.addEventListener('click',e=>{togglePause();e.currentTarget.blur();});
+btnHonk.addEventListener('click',e=>{honk();e.currentTarget.blur();});
+slider.addEventListener('input',e=>{S.speed=+e.target.value;speedLabel.textContent=Math.round(S.speed*18)+' km/h';});
+$('scene').addEventListener('click',honk);
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();togglePause();}
+  else if(e.key==='h'||e.key==='H'){honk();}
+});
+</script>
+</body>
+</html>

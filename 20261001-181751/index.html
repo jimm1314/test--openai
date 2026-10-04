@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f6b664" />
+  <title>鹈鹕的海岸骑行</title>
+  <style>
+    :root {
+      --ink: #18333a;
+      --cream: #fff8e9;
+      --coral: #ef775f;
+      --orange: #f5a84d;
+      --sea: #3d9ca3;
+      --deep-sea: #226f78;
+      --sky-top: #f9c879;
+      --sky-bottom: #faeed0;
+      --pace: 1.1s;
+      --scene-shift-x: 0px;
+      --scene-shift-y: 0px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #f7c77d;
+      color: var(--ink);
+      font-family: Inter, ui-rounded, "SF Pro Rounded", "PingFang SC", system-ui, sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-height: 620px;
+      isolation: isolate;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 76% 22%, rgba(255,255,255,.55), transparent 13%),
+        linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 62%, #b8d8c9 62.2%, #b8d8c9 100%);
+      transition: filter .4s ease;
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      opacity: .17;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.21'/%3E%3C/svg%3E");
+    }
+
+    header {
+      position: absolute;
+      top: 34px;
+      left: 42px;
+      right: 42px;
+      z-index: 30;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 16px; }
+
+    .brand-mark {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: rgba(255,248,233,.5);
+      box-shadow: 5px 5px 0 rgba(24,51,58,.13);
+      font-size: 25px;
+      transform: rotate(-7deg);
+    }
+
+    .eyebrow {
+      margin: 0 0 3px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .23em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Songti SC", serif;
+      font-size: clamp(30px, 4.3vw, 68px);
+      font-weight: 600;
+      letter-spacing: -.055em;
+      line-height: .95;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border: 1.5px solid rgba(24,51,58,.75);
+      border-radius: 999px;
+      background: rgba(255,248,233,.64);
+      box-shadow: 0 10px 30px rgba(72,74,54,.12);
+      backdrop-filter: blur(12px);
+    }
+
+    .round-btn {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      color: var(--cream);
+      background: var(--ink);
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease;
+    }
+
+    .round-btn:hover { transform: rotate(-5deg) scale(1.07); background: var(--coral); }
+    .round-btn:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px 0 6px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    input[type="range"] {
+      width: 96px;
+      height: 4px;
+      appearance: none;
+      border-radius: 99px;
+      background: rgba(24,51,58,.23);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 16px;
+      height: 16px;
+      appearance: none;
+      border: 2px solid var(--cream);
+      border-radius: 50%;
+      background: var(--coral);
+      box-shadow: 0 0 0 1px var(--ink);
+    }
+
+    .sun {
+      position: absolute;
+      top: 15%;
+      right: 13%;
+      width: clamp(94px, 10vw, 156px);
+      aspect-ratio: 1;
+      border: 2px solid rgba(24,51,58,.8);
+      border-radius: 50%;
+      background: #ffdf7c;
+      box-shadow: 0 0 0 20px rgba(255,232,158,.14), 0 0 70px rgba(255,246,199,.75);
+      animation: sunPulse 5s ease-in-out infinite;
+    }
+
+    .sun::after {
+      content: "";
+      position: absolute;
+      width: 11%;
+      aspect-ratio: 1;
+      left: 27%;
+      top: 25%;
+      border-radius: 50%;
+      background: rgba(239,119,95,.18);
+      box-shadow: 42px 39px 0 6px rgba(239,119,95,.12), 6px 67px 0 2px rgba(239,119,95,.13);
+    }
+
+    .cloud {
+      position: absolute;
+      z-index: 1;
+      width: 180px;
+      height: 45px;
+      color: rgba(255,248,233,.75);
+      border-bottom: 2px solid rgba(24,51,58,.42);
+      border-radius: 50%;
+      animation: cloudRun calc(var(--pace) * 17) linear infinite;
+    }
+
+    .cloud::before, .cloud::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      border: 2px solid rgba(24,51,58,.42);
+      border-bottom-color: transparent;
+      border-radius: 50% 50% 0 0;
+      background: currentColor;
+    }
+
+    .cloud::before { left: 30px; width: 74px; height: 55px; }
+    .cloud::after { left: 86px; width: 62px; height: 38px; }
+    .cloud.one { top: 23%; left: 8%; transform: scale(.7); }
+    .cloud.two { top: 36%; left: 61%; transform: scale(.42); animation-delay: -8s; opacity: .75; }
+
+    .bird {
+      position: absolute;
+      z-index: 2;
+      width: 32px;
+      height: 12px;
+      border-top: 2px solid var(--ink);
+      border-radius: 50%;
+      opacity: .58;
+      animation: birdDrift 9s ease-in-out infinite;
+    }
+
+    .bird::after {
+      content: "";
+      position: absolute;
+      left: 27px;
+      top: -2px;
+      width: 32px;
+      height: 12px;
+      border-top: 2px solid var(--ink);
+      border-radius: 50%;
+    }
+
+    .bird.a { top: 29%; left: 27%; }
+    .bird.b { top: 20%; left: 34%; transform: scale(.65); animation-delay: -3s; }
+
+    .sea {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 26%;
+      height: 22%;
+      z-index: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, #68b9b5, #348c95);
+      border-top: 2px solid var(--ink);
+    }
+
+    .sea::before, .sea::after {
+      content: "";
+      position: absolute;
+      inset: 15% -10% auto 0;
+      height: 20px;
+      opacity: .5;
+      background: repeating-linear-gradient(90deg, transparent 0 60px, rgba(255,255,255,.7) 60px 110px, transparent 110px 160px);
+      transform: skewX(-18deg);
+      animation: waterMove calc(var(--pace) * 5) linear infinite;
+    }
+
+    .sea::after { top: 58%; opacity: .28; animation-direction: reverse; animation-duration: calc(var(--pace) * 8); }
+
+    .shoreline {
+      position: absolute;
+      z-index: 3;
+      left: -5%;
+      bottom: 22%;
+      width: 110%;
+      height: 9%;
+      border-top: 2px solid var(--ink);
+      background: #ecd596;
+      clip-path: polygon(0 26%, 8% 7%, 16% 25%, 26% 8%, 35% 28%, 45% 5%, 57% 26%, 68% 4%, 79% 22%, 90% 3%, 100% 24%, 100% 100%, 0 100%);
+    }
+
+    .road {
+      position: absolute;
+      z-index: 4;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 28%;
+      border-top: 3px solid var(--ink);
+      background: #d9785e;
+      overflow: hidden;
+    }
+
+    .road::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 58%;
+      height: 5px;
+      background: repeating-linear-gradient(90deg, var(--cream) 0 90px, transparent 90px 165px);
+      animation: roadRun calc(var(--pace) * 1.65) linear infinite;
+    }
+
+    .road::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 8%;
+      height: 3px;
+      opacity: .23;
+      background: repeating-linear-gradient(90deg, var(--ink) 0 18px, transparent 18px 36px);
+      animation: roadRun calc(var(--pace) * 2.4) linear infinite;
+    }
+
+    .plant {
+      position: absolute;
+      z-index: 5;
+      bottom: 25%;
+      width: 8px;
+      height: 44px;
+      border-left: 3px solid var(--ink);
+      border-radius: 50%;
+      transform-origin: bottom;
+      animation: plantRun calc(var(--pace) * 4.5) linear infinite;
+    }
+
+    .plant::before, .plant::after {
+      content: "";
+      position: absolute;
+      width: 17px;
+      height: 8px;
+      border: 2px solid var(--ink);
+      border-radius: 100% 0;
+      background: #79a775;
+    }
+
+    .plant::before { left: -18px; top: 15px; transform: rotate(12deg); }
+    .plant::after { left: 0; top: 26px; transform: scaleX(-1) rotate(12deg); }
+    .plant.p1 { left: 14%; animation-delay: -2s; }
+    .plant.p2 { left: 80%; height: 58px; animation-delay: -.3s; }
+    .plant.p3 { left: 43%; height: 32px; animation-delay: -4s; }
+
+    .bike-stage {
+      position: absolute;
+      z-index: 10;
+      left: 50%;
+      bottom: 13.5%;
+      width: min(680px, 68vw);
+      min-width: 420px;
+      transform: translate(calc(-50% + var(--scene-shift-x)), var(--scene-shift-y));
+      transition: transform .2s ease-out;
+      filter: drop-shadow(0 18px 3px rgba(24,51,58,.13));
+    }
+
+    .bike-stage svg { display: block; width: 100%; overflow: visible; }
+
+    .rider { animation: riderBob var(--pace) ease-in-out infinite; transform-origin: 54% 60%; }
+    .wheel { transform-box: fill-box; transform-origin: center; animation: wheelSpin var(--pace) linear infinite; }
+    .pedal { transform-box: fill-box; transform-origin: center; animation: wheelSpin var(--pace) linear infinite; }
+    .left-leg { transform-box: fill-box; transform-origin: 50% 8%; animation: legPush var(--pace) ease-in-out infinite; }
+    .right-leg { transform-box: fill-box; transform-origin: 50% 8%; animation: legPush var(--pace) ease-in-out infinite reverse; }
+    .wing { transform-box: fill-box; transform-origin: 90% 30%; animation: wingBeat calc(var(--pace) * 2.4) ease-in-out infinite; }
+    .tail-feather { transform-box: fill-box; transform-origin: right center; animation: tailWave calc(var(--pace) * 1.4) ease-in-out infinite; }
+    .scarf-end { transform-box: fill-box; transform-origin: right center; animation: scarfWave calc(var(--pace) * .65) ease-in-out infinite alternate; }
+    .beak { cursor: pointer; transform-origin: 62% 38%; }
+    .beak:hover { filter: brightness(1.08); }
+
+    .speech {
+      position: absolute;
+      z-index: 15;
+      left: 62%;
+      bottom: 64%;
+      padding: 11px 16px;
+      border: 2px solid var(--ink);
+      border-radius: 18px 18px 18px 3px;
+      background: var(--cream);
+      font-family: Georgia, serif;
+      font-size: 17px;
+      font-style: italic;
+      box-shadow: 5px 5px 0 rgba(24,51,58,.13);
+      opacity: 0;
+      transform: translateY(8px) rotate(3deg);
+      pointer-events: none;
+    }
+
+    .speech.show { animation: popSpeech 1.7s ease both; }
+
+    .caption {
+      position: absolute;
+      z-index: 25;
+      left: 42px;
+      bottom: 34px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--cream);
+    }
+
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--cream);
+      border-radius: 50%;
+      background: #86c56c;
+      animation: blink 1.8s ease-in-out infinite;
+    }
+
+    .tip {
+      position: absolute;
+      z-index: 25;
+      right: 42px;
+      bottom: 31px;
+      padding: 9px 13px;
+      border: 1px solid rgba(255,248,233,.5);
+      border-radius: 999px;
+      color: var(--cream);
+      font-size: 12px;
+      background: rgba(24,51,58,.16);
+      backdrop-filter: blur(8px);
+    }
+
+    .paused * { animation-play-state: paused !important; }
+
+    @keyframes wheelSpin { to { transform: rotate(360deg); } }
+    @keyframes riderBob { 0%,100% { transform: translateY(0) rotate(.3deg); } 50% { transform: translateY(-6px) rotate(-.5deg); } }
+    @keyframes legPush { 0%,100% { transform: rotate(10deg); } 50% { transform: rotate(-17deg); } }
+    @keyframes wingBeat { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(13deg); } }
+    @keyframes tailWave { 0%,100% { transform: rotate(1deg); } 50% { transform: rotate(-9deg); } }
+    @keyframes scarfWave { from { transform: rotate(-8deg) skewX(0); } to { transform: rotate(7deg) skewX(-8deg); } }
+    @keyframes roadRun { to { background-position-x: -165px; } }
+    @keyframes waterMove { to { transform: translateX(-160px) skewX(-18deg); } }
+    @keyframes cloudRun { from { margin-left: 0; } to { margin-left: -210px; } }
+    @keyframes birdDrift { 0%,100% { translate: 0 0; } 50% { translate: 28px -12px; } }
+    @keyframes plantRun { from { translate: 105vw 0; } to { translate: -110vw 0; } }
+    @keyframes sunPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+    @keyframes popSpeech { 0% { opacity: 0; transform: translateY(10px) scale(.8) rotate(3deg); } 15%,72% { opacity: 1; transform: translateY(0) scale(1) rotate(3deg); } 100% { opacity: 0; transform: translateY(-8px) scale(.94) rotate(1deg); } }
+
+    @media (max-width: 720px) {
+      header { top: 24px; left: 22px; right: 22px; }
+      .brand-mark { width: 44px; height: 44px; font-size: 20px; }
+      .eyebrow { font-size: 9px; }
+      .controls { position: absolute; top: 74px; right: 0; }
+      .speed-control span { display: none; }
+      .bike-stage { width: 88vw; min-width: 380px; bottom: 17%; }
+      .caption { left: 22px; bottom: 22px; }
+      .tip { display: none; }
+      .sun { right: 8%; top: 23%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+      .tip { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app" aria-label="一只鹈鹕沿海岸骑自行车的动画场景">
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">↝</div>
+        <div>
+          <p class="eyebrow">Pelican Cycle Club · No. 08</p>
+          <h1>沿风骑行</h1>
+        </div>
+      </div>
+      <div class="controls" aria-label="动画控制">
+        <button class="round-btn" id="toggle" type="button" aria-label="暂停动画" title="暂停 / 继续">
+          <svg id="toggleIcon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4.5 3v10M11.5 3v10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <label class="speed-control">
+          <span>速度</span>
+          <input id="speed" type="range" min="0.55" max="2" step="0.05" value="1" aria-label="骑行速度" />
+        </label>
+      </div>
+    </header>
+
+    <div class="sun" aria-hidden="true"></div>
+    <div class="cloud one" aria-hidden="true"></div>
+    <div class="cloud two" aria-hidden="true"></div>
+    <div class="bird a" aria-hidden="true"></div>
+    <div class="bird b" aria-hidden="true"></div>
+    <div class="sea" aria-hidden="true"></div>
+    <div class="shoreline" aria-hidden="true"></div>
+    <div class="road" aria-hidden="true"></div>
+    <i class="plant p1" aria-hidden="true"></i>
+    <i class="plant p2" aria-hidden="true"></i>
+    <i class="plant p3" aria-hidden="true"></i>
+
+    <div class="bike-stage" id="bikeStage">
+      <div class="speech" id="speech">Honk! Honk!</div>
+      <svg viewBox="0 0 720 500" role="img" aria-label="戴着围巾的鹈鹕骑着红色自行车">
+        <g fill="none" stroke="#18333a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+          <g class="wheel">
+            <circle cx="180" cy="385" r="96" fill="#fff8e9" fill-opacity=".2" stroke-width="9"/>
+            <circle cx="180" cy="385" r="8" fill="#18333a" stroke="none"/>
+            <path d="M180 289v192M84 385h192M112 317l136 136M248 317L112 453" stroke-width="3" opacity=".58"/>
+          </g>
+          <g class="wheel">
+            <circle cx="540" cy="385" r="96" fill="#fff8e9" fill-opacity=".2" stroke-width="9"/>
+            <circle cx="540" cy="385" r="8" fill="#18333a" stroke="none"/>
+            <path d="M540 289v192M444 385h192M472 317l136 136M608 317L472 453" stroke-width="3" opacity=".58"/>
+          </g>
+
+          <path d="M180 385l101-9 85-118 54 127H180l77-121h109" stroke="#ef775f" stroke-width="13"/>
+          <path d="M420 385l120 0-64-147" stroke="#ef775f" stroke-width="13"/>
+          <path d="M458 233h57" stroke-width="10"/>
+          <path d="M268 253l-46 0" stroke-width="12"/>
+          <path d="M493 237l31-25" stroke-width="7"/>
+          <g class="pedal">
+            <circle cx="366" cy="385" r="17" fill="#f5a84d"/>
+            <path d="M366 385l35-24M366 385l-35 24"/>
+            <path d="M394 360h20M318 410h20" stroke-width="8"/>
+          </g>
+        </g>
+
+        <g class="rider">
+          <g class="tail-feather" fill="#f7f0db" stroke="#18333a" stroke-width="6" stroke-linejoin="round">
+            <path d="M265 215c-43-13-80 2-95 30 35 5 67 12 94 27z"/>
+            <path d="M263 233c-37 7-61 27-66 51 30-7 53-9 73-1z"/>
+          </g>
+
+          <g class="right-leg" fill="none" stroke="#e58e4d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M366 293c16 38 21 72 3 92l34 4"/>
+          </g>
+
+          <path d="M248 167c-9 88 12 142 88 162 54 14 121-22 119-92-2-71-81-120-154-108-23 4-42 16-53 38z" fill="#f7f0db" stroke="#18333a" stroke-width="7"/>
+          <path d="M283 179c-32 28-37 75-9 107" fill="none" stroke="#d8cab0" stroke-width="6" stroke-linecap="round"/>
+
+          <g class="left-leg" fill="none" stroke="#f5a84d" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M337 298c-11 38-8 68 28 86l-31 25"/>
+          </g>
+
+          <g class="wing">
+            <path d="M307 190c51-18 111 8 123 50-37-5-45 44-100 35-43-7-55-62-23-85z" fill="#fff8e9" stroke="#18333a" stroke-width="7"/>
+            <path d="M318 222c27 7 48 24 58 44M345 206c29 6 51 21 65 39" fill="none" stroke="#d8cab0" stroke-width="5" stroke-linecap="round"/>
+          </g>
+
+          <path d="M293 168c2-61 12-111 45-137 36-29 104-16 114 35 9 47-28 82-67 83-20 1-29 15-30 38z" fill="#f7f0db" stroke="#18333a" stroke-width="7"/>
+          <path d="M372 59c11-13 21-25 27-39M386 63c16-11 30-18 42-22M355 58c2-12 1-23-2-32" fill="none" stroke="#18333a" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="395" cy="68" r="10" fill="#18333a"/>
+          <circle cx="399" cy="64" r="3" fill="#fff8e9"/>
+
+          <g class="beak" id="beak" role="button" tabindex="0" aria-label="按一下让鹈鹕叫">
+            <path d="M437 87c75-20 151-15 193 17-52 9-117 15-186 11z" fill="#f5a84d" stroke="#18333a" stroke-width="7" stroke-linejoin="round"/>
+            <path d="M444 115c42 9 93 9 150 0-29 41-70 57-111 35-19-10-32-22-39-35z" fill="#ef775f" stroke="#18333a" stroke-width="7" stroke-linejoin="round"/>
+            <path d="M509 117c22 5 45 5 70 1" fill="none" stroke="#c95b4a" stroke-width="4" stroke-linecap="round"/>
+          </g>
+
+          <path d="M321 143c32 18 72 20 112 4" fill="none" stroke="#ef775f" stroke-width="16" stroke-linecap="round"/>
+          <g class="scarf-end">
+            <path d="M331 150c-30 27-63 42-101 40l20 25-22 21c50 2 86-23 116-67z" fill="#ef775f" stroke="#18333a" stroke-width="7" stroke-linejoin="round"/>
+          </g>
+
+          <path d="M416 221c30 7 59 10 76 17" fill="none" stroke="#18333a" stroke-width="11" stroke-linecap="round"/>
+          <path d="M489 238l18-13" fill="none" stroke="#f5a84d" stroke-width="14" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="caption"><span class="live-dot"></span><span>海岸风况良好 · 骑行中</span></div>
+    <div class="tip">点击鹈鹕的嘴巴，听它打招呼</div>
+    <div class="grain" aria-hidden="true"></div>
+  </main>
+
+  <script>
+    const app = document.querySelector('#app');
+    const toggle = document.querySelector('#toggle');
+    const toggleIcon = document.querySelector('#toggleIcon');
+    const speed = document.querySelector('#speed');
+    const beak = document.querySelector('#beak');
+    const speech = document.querySelector('#speech');
+    let paused = false;
+
+    const pauseIcon = '<path d="M4.5 3v10M11.5 3v10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>';
+    const playIcon = '<path d="M4 2.7l9 5.3-9 5.3V2.7z" fill="currentColor"/>';
+
+    toggle.addEventListener('click', () => {
+      paused = !paused;
+      app.classList.toggle('paused', paused);
+      toggle.setAttribute('aria-label', paused ? '继续动画' : '暂停动画');
+      toggleIcon.innerHTML = paused ? playIcon : pauseIcon;
+    });
+
+    speed.addEventListener('input', (event) => {
+      const value = Number(event.target.value);
+      document.documentElement.style.setProperty('--pace', `${1.1 / value}s`);
+    });
+
+    function honk() {
+      speech.classList.remove('show');
+      void speech.offsetWidth;
+      speech.classList.add('show');
+
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const context = new AudioContext();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.setValueAtTime(215, context.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(145, context.currentTime + .18);
+      gain.gain.setValueAtTime(.0001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.12, context.currentTime + .025);
+      gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .23);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + .24);
+      oscillator.addEventListener('ended', () => context.close());
+    }
+
+    beak.addEventListener('click', honk);
+    beak.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        honk();
+      }
+    });
+
+    app.addEventListener('pointermove', (event) => {
+      const x = (event.clientX / innerWidth - .5) * 10;
+      const y = (event.clientY / innerHeight - .5) * 5;
+      document.documentElement.style.setProperty('--scene-shift-x', `${x}px`);
+      document.documentElement.style.setProperty('--scene-shift-y', `${y}px`);
+    });
+
+    app.addEventListener('pointerleave', () => {
+      document.documentElement.style.setProperty('--scene-shift-x', '0px');
+      document.documentElement.style.setProperty('--scene-shift-y', '0px');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>鹈鹕骑行日志</title>
+  <style>
+    :root {
+      --ink: #17324a;
+      --muted: #587188;
+      --cream: #fff9ee;
+      --paper: rgba(255, 252, 244, 0.78);
+      --accent: #f07158;
+      --accent-deep: #cf4f44;
+      --teal: #1d9a9d;
+      --water: #65c8ca;
+      --ride-duration: 12s;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.84) 0 3px, transparent 4px),
+        radial-gradient(circle at 81% 22%, rgba(255, 255, 255, 0.66) 0 2px, transparent 3px),
+        linear-gradient(135deg, #fff9e9, #d7f1ed 46%, #b1dfe2);
+      background-size: 130px 130px, 170px 170px, cover;
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .page {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 42px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 9px;
+      color: var(--accent-deep);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 26px;
+      height: 3px;
+      border-radius: 99px;
+      background: var(--accent);
+      content: "";
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 580px;
+      font-size: clamp(2.3rem, 5vw, 4.7rem);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+    }
+
+    .intro {
+      max-width: 370px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.65;
+    }
+
+    .card {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      border-radius: 30px;
+      background: var(--paper);
+      box-shadow: 0 24px 80px rgba(31, 82, 98, 0.14);
+      backdrop-filter: blur(18px);
+    }
+
+    .stage-wrap {
+      position: relative;
+      padding: 14px;
+    }
+
+    .stage {
+      --scene-sky-top: #91d9df;
+      --scene-sky-bottom: #e9f5d8;
+      position: relative;
+      height: clamp(450px, 57vw, 650px);
+      overflow: hidden;
+      border-radius: 22px;
+      isolation: isolate;
+      background:
+        linear-gradient(180deg, var(--scene-sky-top), var(--scene-sky-bottom) 70%);
+      transition: background 800ms ease;
+    }
+
+    .stage::before,
+    .stage::after {
+      position: absolute;
+      right: -5%;
+      bottom: 23%;
+      left: -5%;
+      height: 23%;
+      border-radius: 50% 50% 0 0 / 36% 36% 0 0;
+      background: rgba(255, 255, 255, 0.38);
+      content: "";
+      filter: blur(1px);
+      z-index: -1;
+    }
+
+    .stage::after {
+      bottom: 17%;
+      left: 14%;
+      background: rgba(75, 169, 175, 0.34);
+      transform: rotate(2deg);
+    }
+
+    .sun {
+      position: absolute;
+      top: 12%;
+      right: 12%;
+      width: clamp(70px, 11vw, 125px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: #ffe9a0;
+      box-shadow: 0 0 0 18px rgba(255, 238, 163, 0.18), 0 0 70px 18px rgba(255, 239, 157, 0.5);
+      transition: all 800ms ease;
+    }
+
+    .moon {
+      position: absolute;
+      top: 14%;
+      right: 13%;
+      width: clamp(58px, 8vw, 93px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      opacity: 0;
+      background: #fff7d0;
+      box-shadow: 0 0 36px 12px rgba(234, 247, 255, 0.32);
+      transition: opacity 800ms ease;
+    }
+
+    .moon::after {
+      position: absolute;
+      top: -5px;
+      left: 19px;
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--scene-sky-top);
+      content: "";
+    }
+
+    .cloud {
+      position: absolute;
+      width: 150px;
+      height: 38px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.6);
+      filter: blur(0.2px);
+      opacity: 0.78;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      position: absolute;
+      bottom: 0;
+      border-radius: 50%;
+      background: inherit;
+      content: "";
+    }
+
+    .cloud::before {
+      left: 28px;
+      width: 60px;
+      height: 60px;
+    }
+
+    .cloud::after {
+      right: 22px;
+      width: 82px;
+      height: 82px;
+    }
+
+    .cloud-one {
+      top: 23%;
+      left: 8%;
+      transform: scale(0.7);
+      animation: cloud-drift 22s linear infinite;
+    }
+
+    .cloud-two {
+      top: 34%;
+      left: 50%;
+      transform: scale(0.42);
+      opacity: 0.47;
+      animation: cloud-drift 29s linear -9s infinite reverse;
+    }
+
+    .bird-speck {
+      position: absolute;
+      top: 19%;
+      left: 38%;
+      width: 32px;
+      height: 13px;
+      border-top: 3px solid rgba(23, 50, 74, 0.38);
+      border-radius: 50%;
+      transform: rotate(-8deg);
+    }
+
+    .bird-speck::after {
+      position: absolute;
+      top: -3px;
+      left: 15px;
+      width: 30px;
+      height: 13px;
+      border-top: 3px solid rgba(23, 50, 74, 0.38);
+      border-radius: 50%;
+      content: "";
+      transform: rotate(16deg);
+    }
+
+    .island {
+      position: absolute;
+      bottom: 21%;
+      left: -4%;
+      width: 44%;
+      height: 13%;
+      border-radius: 50% 55% 5% 0;
+      background: #4f9d79;
+      box-shadow: inset 0 16px 0 rgba(255, 255, 255, 0.13);
+      transform: rotate(-2deg);
+    }
+
+    .island::before {
+      position: absolute;
+      right: 14%;
+      bottom: 55%;
+      width: 22%;
+      height: 65%;
+      border-radius: 100% 0 100% 0;
+      background: #317a6e;
+      content: "";
+      transform: rotate(-18deg);
+    }
+
+    .island::after {
+      position: absolute;
+      right: 5%;
+      bottom: 53%;
+      width: 18%;
+      height: 62%;
+      border-radius: 100% 0 100% 0;
+      background: #438b72;
+      content: "";
+      transform: rotate(18deg);
+    }
+
+    .water {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 27%;
+      overflow: hidden;
+      background:
+        repeating-linear-gradient(176deg, transparent 0 21px, rgba(255, 255, 255, 0.32) 22px 24px, transparent 25px 42px),
+        linear-gradient(180deg, #72cbca, #26929e);
+    }
+
+    .water::before,
+    .water::after {
+      position: absolute;
+      top: 20%;
+      left: -10%;
+      width: 120%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.62);
+      content: "";
+      transform: rotate(-1.2deg);
+      animation: ripple 5s ease-in-out infinite;
+    }
+
+    .water::after {
+      top: 54%;
+      opacity: 0.5;
+      animation-delay: -2.3s;
+    }
+
+    .shore {
+      position: absolute;
+      right: 0;
+      bottom: 24%;
+      left: 0;
+      height: 18px;
+      background: #eed48b;
+      clip-path: polygon(0 40%, 18% 20%, 40% 52%, 62% 0, 78% 42%, 100% 15%, 100% 100%, 0 100%);
+    }
+
+    .ride-svg {
+      position: absolute;
+      right: 0;
+      bottom: 18%;
+      left: 0;
+      width: 100%;
+      height: 58%;
+      overflow: visible;
+    }
+
+    .rider-group {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ride-across var(--ride-duration) linear infinite;
+    }
+
+    .rider-bob {
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      animation: rider-bob 0.78s ease-in-out infinite;
+    }
+
+    .wheel-spin {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: wheel-turn 0.75s linear infinite;
+    }
+
+    .pedal-spin {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pedal-turn 0.75s linear infinite;
+    }
+
+    .wing-flap {
+      transform-box: fill-box;
+      transform-origin: 50% 10%;
+      animation: wing-flap 1.2s ease-in-out infinite;
+    }
+
+    .feather-sway {
+      transform-box: fill-box;
+      transform-origin: bottom center;
+      animation: feather-sway 1.5s ease-in-out infinite;
+    }
+
+    .road {
+      position: absolute;
+      right: 0;
+      bottom: 9.5%;
+      left: 0;
+      height: 19%;
+      background: #f2a36c;
+      clip-path: polygon(0 36%, 100% 0, 100% 100%, 0 100%);
+      box-shadow: inset 0 14px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .road::before {
+      position: absolute;
+      top: 43%;
+      left: -5%;
+      width: 110%;
+      height: 7px;
+      background: repeating-linear-gradient(90deg, rgba(255, 247, 194, 0.8) 0 48px, transparent 48px 87px);
+      transform: rotate(-3deg);
+      content: "";
+    }
+
+    .status {
+      position: absolute;
+      top: 22px;
+      left: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.66);
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(23, 50, 74, 0.18);
+      font-size: 0.73rem;
+      font-weight: 750;
+      letter-spacing: 0.06em;
+      backdrop-filter: blur(10px);
+    }
+
+    .status::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #c7f66d;
+      box-shadow: 0 0 0 4px rgba(199, 246, 109, 0.17);
+      content: "";
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 8px 4px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 15px;
+      border: 1px solid rgba(23, 50, 74, 0.1);
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.62);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .control:hover {
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(23, 50, 74, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .control:focus-visible {
+      outline: 3px solid rgba(240, 113, 88, 0.34);
+      outline-offset: 3px;
+    }
+
+    .control .icon {
+      font-size: 1rem;
+    }
+
+    .caption {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 650;
+    }
+
+    .stats {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 650;
+    }
+
+    .stats strong {
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
+    .night .stage {
+      --scene-sky-top: #172b4b;
+      --scene-sky-bottom: #48658a;
+    }
+
+    .night .sun {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+
+    .night .moon {
+      opacity: 1;
+    }
+
+    .night .cloud {
+      background: rgba(208, 225, 245, 0.2);
+    }
+
+    .night .island {
+      background: #274f5a;
+    }
+
+    .night .road {
+      background: #93685c;
+    }
+
+    .night .water {
+      background:
+        repeating-linear-gradient(176deg, transparent 0 21px, rgba(181, 227, 232, 0.18) 22px 24px, transparent 25px 42px),
+        linear-gradient(180deg, #356f89, #183e64);
+    }
+
+    .night .status {
+      background: rgba(8, 18, 42, 0.35);
+    }
+
+    .paused * {
+      animation-play-state: paused !important;
+    }
+
+    @keyframes ride-across {
+      0% {
+        transform: translateX(-42%);
+      }
+      100% {
+        transform: translateX(116%);
+      }
+    }
+
+    @keyframes rider-bob {
+      0%, 100% {
+        transform: translateY(0) rotate(-1deg);
+      }
+      50% {
+        transform: translateY(-4px) rotate(1deg);
+      }
+    }
+
+    @keyframes wheel-turn {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pedal-turn {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes wing-flap {
+      0%, 100% {
+        transform: rotate(4deg);
+      }
+      50% {
+        transform: rotate(-9deg);
+      }
+    }
+
+    @keyframes feather-sway {
+      0%, 100% {
+        transform: rotate(-2deg);
+      }
+      50% {
+        transform: rotate(7deg);
+      }
+    }
+
+    @keyframes cloud-drift {
+      0%, 100% {
+        margin-left: -8px;
+      }
+      50% {
+        margin-left: 24px;
+      }
+    }
+
+    @keyframes ripple {
+      0%, 100% {
+        transform: translateX(-2%) rotate(-1.2deg);
+        opacity: 0.42;
+      }
+      50% {
+        transform: translateX(2%) rotate(-1.2deg);
+        opacity: 0.72;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .page {
+        width: min(100% - 18px, 1160px);
+        padding-top: 20px;
+      }
+
+      .topbar {
+        display: block;
+      }
+
+      .intro {
+        margin-top: 16px;
+      }
+
+      .stage-wrap {
+        padding: 8px;
+      }
+
+      .stage {
+        height: 520px;
+        border-radius: 18px;
+      }
+
+      .controls {
+        padding-inline: 2px;
+      }
+
+      .stats {
+        width: 100%;
+        justify-content: space-between;
+        padding: 4px 6px 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rider-group,
+      .rider-bob,
+      .wheel-spin,
+      .pedal-spin,
+      .wing-flap,
+      .feather-sway,
+      .cloud-one,
+      .cloud-two,
+      .water::before,
+      .water::after {
+        animation-duration: 0.001ms;
+        animation-iteration-count: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Daily coastal dispatch</p>
+        <h1>鹈鹕，出发去兜风。</h1>
+      </div>
+      <p class="intro">一只心情很好的鹈鹕，骑着它那辆橙色小车，沿着海边把风和浪花都带回来了。</p>
+    </header>
+
+    <section class="card">
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <div class="sun"></div>
+          <div class="moon"></div>
+          <div class="cloud cloud-one"></div>
+          <div class="cloud cloud-two"></div>
+          <div class="bird-speck"></div>
+          <div class="status" id="status">正在巡航 · 海风 3 级</div>
+          <div class="island"></div>
+          <div class="shore"></div>
+          <div class="water"></div>
+          <div class="road"></div>
+
+          <svg class="ride-svg" viewBox="0 0 1000 430" role="img" aria-label="一只鹈鹕正在骑自行车">
+            <g class="rider-group">
+              <g class="rider-bob">
+                <g class="bike" stroke-linecap="round" stroke-linejoin="round">
+                  <g fill="none" stroke="#17324a" stroke-width="7">
+                    <circle cx="365" cy="326" r="57" fill="#f3a86f" stroke="#17324a" stroke-width="8"></circle>
+                    <circle cx="610" cy="326" r="57" fill="#f3a86f" stroke="#17324a" stroke-width="8"></circle>
+                    <path d="M365 326 L446 238 L530 326 Z M446 238 L610 326 M446 238 L492 326 M492 326 L530 326"></path>
+                    <path d="M438 223 L466 223 M438 223 L429 238 M530 326 L556 283"></path>
+                  </g>
+                  <g class="wheel-spin" fill="none" stroke="#fcecc7" stroke-width="3">
+                    <path d="M365 275V377 M314 326H416 M329 290L401 362 M329 362L401 290"></path>
+                    <path d="M610 275V377 M559 326H661 M574 290L646 362 M574 362L646 290"></path>
+                  </g>
+                  <path d="M553 280 C576 273 592 278 604 290" fill="none" stroke="#17324a" stroke-width="8"></path>
+                  <g class="pedal-spin">
+                    <circle cx="492" cy="326" r="13" fill="#f07158" stroke="#17324a" stroke-width="5"></circle>
+                    <path d="M492 326 L474 348 M492 326 L512 304" fill="none" stroke="#17324a" stroke-width="6"></path>
+                    <path d="M468 350 H480 M508 302 H520" fill="none" stroke="#17324a" stroke-width="6"></path>
+                  </g>
+                  <path d="M421 221 Q446 207 470 221" fill="none" stroke="#f07158" stroke-width="9"></path>
+                  <path d="M421 221 Q445 232 470 221" fill="none" stroke="#cf4f44" stroke-width="5"></path>
+                </g>
+
+                <g class="pelican">
+                  <path d="M442 218 C454 164 502 123 556 135 C592 143 609 173 594 210 C578 247 529 258 477 247 Z" fill="#fbf6e7" stroke="#17324a" stroke-width="7"></path>
+                  <path d="M482 200 C506 169 532 157 558 164 C579 169 589 187 580 206 C568 230 532 237 498 229 Z" fill="#d6e9e3"></path>
+                  <path class="wing-flap" d="M503 177 C526 162 559 174 565 199 C570 219 551 232 522 224 C504 218 494 198 503 177 Z" fill="#b7d5cf" stroke="#17324a" stroke-width="7"></path>
+                  <path d="M536 141 C531 112 540 82 570 66 C593 54 622 64 631 88 C641 114 624 137 597 146 C579 152 555 150 536 141 Z" fill="#fff9ec" stroke="#17324a" stroke-width="7"></path>
+                  <path class="feather-sway" d="M569 72 C552 45 559 28 576 19 C591 35 592 49 583 71" fill="#e8f1e7" stroke="#17324a" stroke-width="6"></path>
+                  <path d="M618 91 C670 87 722 100 762 123 C723 143 669 144 619 127 Z" fill="#f3b66f" stroke="#17324a" stroke-width="7"></path>
+                  <path d="M619 115 C666 117 705 122 739 127" fill="none" stroke="#cf714e" stroke-width="4"></path>
+                  <circle cx="597" cy="91" r="7" fill="#17324a"></circle>
+                  <circle cx="599" cy="89" r="2.5" fill="#fff"></circle>
+                  <path d="M466 243 C463 267 464 286 473 305 M496 243 C497 268 507 285 516 300" fill="none" stroke="#e88952" stroke-width="9"></path>
+                  <path d="M466 304 C455 306 449 313 441 316 M516 300 C523 305 529 309 536 310" fill="none" stroke="#17324a" stroke-width="6"></path>
+                  <path d="M474 201 C460 189 447 183 432 182" fill="none" stroke="#17324a" stroke-width="6"></path>
+                  <circle cx="430" cy="181" r="5" fill="#f07158"></circle>
+                </g>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <button class="control" id="pauseButton" type="button" aria-pressed="false">
+            <span class="icon" aria-hidden="true">Ⅱ</span>
+            <span>暂停旅程</span>
+          </button>
+          <button class="control" id="speedButton" type="button">
+            <span class="icon" aria-hidden="true">↯</span>
+            <span>速度 1×</span>
+          </button>
+          <button class="control" id="modeButton" type="button" aria-pressed="false">
+            <span class="icon" aria-hidden="true">☼</span>
+            <span>切换夜航</span>
+          </button>
+        </div>
+        <div class="stats">
+          <span><strong id="distance">08.4</strong> km 今日路程</span>
+          <span class="caption">下一站：海风码头</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const stage = document.querySelector("#stage");
+    const pauseButton = document.querySelector("#pauseButton");
+    const speedButton = document.querySelector("#speedButton");
+    const modeButton = document.querySelector("#modeButton");
+    const status = document.querySelector("#status");
+    const distance = document.querySelector("#distance");
+    const speeds = [
+      { label: "1×", duration: "12s" },
+      { label: "1.5×", duration: "8s" },
+      { label: "0.7×", duration: "18s" }
+    ];
+    let speedIndex = 0;
+    let distanceValue = 8.4;
+
+    pauseButton.addEventListener("click", () => {
+      const paused = stage.classList.toggle("paused");
+      pauseButton.setAttribute("aria-pressed", String(paused));
+      pauseButton.querySelector("span:last-child").textContent = paused ? "继续旅程" : "暂停旅程";
+      pauseButton.querySelector(".icon").textContent = paused ? "▶" : "Ⅱ";
+      status.textContent = paused ? "已停靠 · 观察一朵云" : "正在巡航 · 海风 3 级";
+    });
+
+    speedButton.addEventListener("click", () => {
+      speedIndex = (speedIndex + 1) % speeds.length;
+      const speed = speeds[speedIndex];
+      stage.style.setProperty("--ride-duration", speed.duration);
+      speedButton.querySelector("span:last-child").textContent = `速度 ${speed.label}`;
+      status.textContent = `正在巡航 · 速度 ${speed.label}`;
+    });
+
+    modeButton.addEventListener("click", () => {
+      const night = document.body.classList.toggle("night");
+      modeButton.setAttribute("aria-pressed", String(night));
+      modeButton.querySelector(".icon").textContent = night ? "☾" : "☼";
+      modeButton.querySelector("span:last-child").textContent = night ? "切换日航" : "切换夜航";
+      status.textContent = night ? "夜航模式 · 月光很轻" : "正在巡航 · 海风 3 级";
+    });
+
+    window.setInterval(() => {
+      if (!stage.classList.contains("paused")) {
+        distanceValue = (distanceValue + 0.1) % 99.9;
+        distance.textContent = distanceValue.toFixed(1).padStart(4, "0");
+      }
+    }, 2600);
+  </script>
+</body>
+</html>

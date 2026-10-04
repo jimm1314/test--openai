@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>超级玛丽骑自行车</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍄</text></svg>">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:#000; overflow:hidden; }
+  body { font-family:'Courier New', ui-monospace, monospace; }
+
+  #stage {
+    position:absolute; left:50%; top:50%;
+    width:960px; height:540px;
+    transform:translate(-50%,-50%);
+    transform-origin:center center;
+    overflow:hidden; background:#5C94FC;
+  }
+  .layer { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; }
+
+  /* ---------- 背景视差层 ---------- */
+  .sky { background:linear-gradient(#5C94FC, #79B7F2 55%, #A8D8F0); }
+  .sun {
+    position:absolute; right:110px; top:55px; width:64px; height:64px; border-radius:50%;
+    background:#FFF6BF; box-shadow:0 0 40px 12px rgba(255,246,191,.75);
+  }
+  .clouds {
+    background-image:
+      radial-gradient(ellipse 55px 20px at 90px 60px,  #fff 62%, transparent 63%),
+      radial-gradient(ellipse 75px 27px at 135px 50px, #fff 62%, transparent 63%),
+      radial-gradient(ellipse 50px 18px at 300px 105px,#fff 62%, transparent 63%),
+      radial-gradient(ellipse 62px 23px at 345px 95px, #fff 62%, transparent 63%),
+      radial-gradient(ellipse 45px 16px at 435px 40px, #fff 62%, transparent 63%);
+    background-size:480px 220px; background-repeat:repeat-x;
+    animation:mv480 80s linear infinite;
+  }
+  .hills-far {
+    top:auto; bottom:110px; height:170px;
+    background-image:
+      radial-gradient(ellipse 200px 150px at 200px 100%, #43A047 63%, transparent 64%),
+      radial-gradient(ellipse 260px 190px at 540px 100%, #3D9242 63%, transparent 64%);
+    background-size:640px 170px; background-repeat:repeat-x; background-position:0 100%;
+    animation:mv640 40s linear infinite;
+  }
+  .bushes {
+    top:auto; bottom:110px; height:60px;
+    background-image:
+      radial-gradient(ellipse 60px 30px at 60px 100%,  #2E7D32 65%, transparent 66%),
+      radial-gradient(ellipse 85px 42px at 230px 100%, #388E3C 65%, transparent 66%);
+    background-size:320px 60px; background-repeat:repeat-x; background-position:0 100%;
+    animation:mv320 10s linear infinite;
+  }
+  .ground { top:auto; bottom:0; height:110px; }
+  .grass {
+    position:absolute; left:0; top:0; width:100%; height:16px;
+    background:repeating-linear-gradient(90deg, #6DBE45 0 30px, #5DA83C 30px 60px);
+    animation:mv60 .1566s linear infinite;
+  }
+  .dirt {
+    position:absolute; left:0; top:16px; width:100%; height:94px;
+    background-color:#D18B47;
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 44px, #A5662F 44px 48px),
+      repeating-linear-gradient(0deg,  transparent 0 30px, #A5662F 30px 34px);
+    animation:mv48 .1254s linear infinite;
+  }
+  @keyframes mv480 { to { background-position-x:-480px; } }
+  @keyframes mv640 { to { background-position-x:-640px; } }
+  @keyframes mv320 { to { background-position-x:-320px; } }
+  @keyframes mv60  { to { background-position-x:-60px;  } }
+  @keyframes mv48  { to { background-position-x:-48px;  } }
+
+  /* ---------- 金币 / 板栗仔 / 漂浮文字 ---------- */
+  .coin {
+    position:absolute; width:26px; height:34px; border-radius:50%; z-index:12;
+    background:radial-gradient(ellipse at 35% 30%, #FFE98A, #FFC400 55%, #D99E00);
+    box-shadow:inset 0 0 0 3px #B8860B, 0 2px 6px rgba(0,0,0,.25);
+    animation:coinspin .7s ease-in-out infinite;
+  }
+  .coin::after {
+    content:''; position:absolute; left:9px; top:6px; right:9px; bottom:6px;
+    border-radius:50%; border:3px solid #B8860B;
+  }
+  @keyframes coinspin { 0%,100% { transform:scaleX(1); } 50% { transform:scaleX(.25); } }
+  .coin.got { animation:coinpop .25s forwards; }
+  @keyframes coinpop { to { transform:scale(1.8); opacity:0; } }
+
+  .goomba { position:absolute; width:84px; height:70px; z-index:11; animation:waddle .5s ease-in-out infinite; transform-origin:50% 100%; }
+  @keyframes waddle { 0%,100% { transform:rotate(-6deg); } 50% { transform:rotate(6deg); } }
+  .g-inner { position:absolute; inset:0; transform-origin:50% 100%; }
+
+  .plus {
+    position:absolute; z-index:25; color:#fff; font-weight:900; font-size:18px;
+    letter-spacing:1px; text-shadow:2px 2px 0 #000; pointer-events:none;
+    animation:rise .7s forwards;
+  }
+  @keyframes rise { to { transform:translateY(-46px); opacity:0; } }
+
+  /* ---------- HUD ---------- */
+  .hud {
+    position:absolute; top:14px; left:0; width:100%; z-index:30;
+    display:flex; justify-content:space-between; padding:0 26px;
+    color:#fff; font-weight:900; font-size:20px; letter-spacing:2px;
+    text-shadow:3px 3px 0 #000; pointer-events:none;
+  }
+  .hud .title { color:#FFE98A; }
+  .hint {
+    position:absolute; bottom:8px; width:100%; z-index:30; text-align:center;
+    color:#fff; opacity:.85; font-size:13px; font-weight:700; letter-spacing:1px;
+    text-shadow:2px 2px 0 #000; pointer-events:none;
+  }
+  #flash {
+    position:absolute; inset:0; z-index:40; background:#E52521; opacity:0; pointer-events:none;
+  }
+  #scene { position:absolute; left:0; top:0; z-index:10; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="layer sky"></div>
+  <div class="sun"></div>
+  <div class="layer clouds"></div>
+  <div class="layer hills-far"></div>
+  <div class="layer bushes"></div>
+  <div class="layer ground"><div class="grass"></div><div class="dirt"></div></div>
+
+  <svg id="scene" viewBox="0 0 960 540" width="960" height="540">
+    <ellipse id="shadow" cx="480" cy="432" rx="125" ry="9" fill="rgba(0,0,0,.18)"/>
+    <g id="rider">
+      <!-- 远侧腿（深色，画在车架后面） -->
+      <g id="legRear">
+        <line id="rearThigh" stroke="#1B3FA6" stroke-width="14"/>
+        <line id="rearShin"  stroke="#1B3FA6" stroke-width="12"/>
+        <rect id="rearShoe" width="26" height="11" fill="#4A2A08" rx="2"/>
+      </g>
+
+      <!-- 自行车 -->
+      <g id="bike">
+        <!-- 链条 -->
+        <line x1="478" y1="360" x2="410" y2="367" stroke="#777" stroke-width="3"/>
+        <line x1="478" y1="388" x2="410" y2="383" stroke="#777" stroke-width="3"/>
+        <!-- 后轮 -->
+        <circle cx="410" cy="375" r="55" fill="none" stroke="#262626" stroke-width="12"/>
+        <circle cx="410" cy="375" r="46" fill="none" stroke="#C0C0C0" stroke-width="3"/>
+        <g id="wRear"></g>
+        <!-- 前轮 -->
+        <circle cx="550" cy="375" r="55" fill="none" stroke="#262626" stroke-width="12"/>
+        <circle cx="550" cy="375" r="46" fill="none" stroke="#C0C0C0" stroke-width="3"/>
+        <g id="wFront"></g>
+        <!-- 车架（红） -->
+        <g stroke="#E52521" stroke-width="7" stroke-linecap="round">
+          <line x1="478" y1="374" x2="433" y2="302"/>
+          <line x1="435" y1="296" x2="520" y2="284"/>
+          <line x1="478" y1="374" x2="537" y2="333"/>
+          <line x1="520" y1="284" x2="537" y2="333"/>
+          <line x1="435" y1="296" x2="410" y2="375"/>
+          <line x1="478" y1="374" x2="410" y2="375"/>
+          <line x1="537" y1="333" x2="550" y2="375"/>
+        </g>
+        <!-- 座垫 / 把立 / 车把 -->
+        <line x1="414" y1="286" x2="446" y2="283" stroke="#222" stroke-width="9" stroke-linecap="round"/>
+        <line x1="520" y1="284" x2="508" y2="272" stroke="#C7C7C7" stroke-width="6" stroke-linecap="round"/>
+        <line x1="508" y1="272" x2="496" y2="279" stroke="#C7C7C7" stroke-width="6" stroke-linecap="round"/>
+        <line x1="501" y1="274" x2="493" y2="281" stroke="#222" stroke-width="8" stroke-linecap="round"/>
+        <!-- 牙盘 / 曲柄 / 脚踏 -->
+        <circle cx="478" cy="374" r="14" fill="#DDD" stroke="#AAB" stroke-width="4"/>
+        <line id="crankA" stroke="#555" stroke-width="6" stroke-linecap="round"/>
+        <line id="crankB" stroke="#555" stroke-width="6" stroke-linecap="round"/>
+        <rect id="pedalA" width="16" height="6" fill="#222" rx="2"/>
+        <rect id="pedalB" width="16" height="6" fill="#222" rx="2"/>
+      </g>
+
+      <!-- 玛丽上半身（像素，JS 生成） -->
+      <g id="mario" transform="rotate(-5 433 292)"></g>
+
+      <!-- 近侧腿（蓝色，画在车架前面） -->
+      <g id="legFront">
+        <line id="frontThigh" stroke="#2B5FE3" stroke-width="14"/>
+        <line id="frontShin"  stroke="#2B5FE3" stroke-width="12"/>
+        <rect id="frontShoe" width="26" height="11" fill="#7C4A12" rx="2"/>
+      </g>
+    </g>
+  </svg>
+
+  <div id="flash"></div>
+  <div class="hud">
+    <div>MARIO<br><span id="score">000000</span></div>
+    <div class="title">🍄 SUPER MARIO BIKE</div>
+    <div>HI<br><span id="hi">000000</span></div>
+  </div>
+  <div class="hint">空格 / 点击 = 跳跃 · 吃金币 +200 · 踩板栗仔 +500 · 被撞分清零</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var stage = document.getElementById('stage');
+
+  /* ================= 舞台自适应缩放 ================= */
+  function fit() {
+    var s = Math.min(window.innerWidth / 960, window.innerHeight / 540);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  /* ================= 像素画数据 ================= */
+  // 玛丽（侧视，面向右）：R红 S肤 N棕 K黑 W白 B蓝 Y黄
+  var MARIO = [
+    "....RRRRRRR.......",
+    "..RRRRRRRRRRR.....",
+    "..RRWWWRRRRRR.....",
+    "..RRWMWRRRRRRRR...",
+    "..RRWWWRRRRRRRRR..",
+    "..NNSSSSK.........",
+    "..NSSSSSSSSSS.....",
+    "..NSSSSSSSSSSS....",
+    "..NNSSSSKKKKK.....",
+    "...SSSSSSS........",
+    "...RRRRR..........",
+    "..RRRRRRRR........",
+    "..BBRRRRRRRRR.....",
+    "..BYBBBRRRRRR.....",
+    "..BBBBBBRRRRWW....",
+    "..BBBBBB.........."
+  ];
+  var PAL = { R:'#E52521', S:'#FFCBA4', N:'#7C4A12', K:'#222222', W:'#FFFFFF', B:'#2B5FE3', Y:'#FFD23F' };
+  var MX = 397, MY = 168, MPX = 8;   // 玛丽像素原点与单像素尺寸（髋部≈(433,292)，手套≈(500,284)落在车把上）
+
+  var marioG = document.getElementById('mario');
+  MARIO.forEach(function (row, r) {
+    row.split('').forEach(function (ch, c) {
+      if (ch === '.') return;
+      var rc = document.createElementNS(SVGNS, 'rect');
+      rc.setAttribute('x', MX + c * MPX);
+      rc.setAttribute('y', MY + r * MPX);
+      rc.setAttribute('width', MPX + 0.6);
+      rc.setAttribute('height', MPX + 0.6);
+      rc.setAttribute('fill', PAL[ch]);
+      marioG.appendChild(rc);
+    });
+  });
+
+  // 板栗仔（HTML div 像素）：G棕 D深棕 W白 K黑
+  var GOOMBA = [
+    "....GGGG....",
+    "..GGGGGGGG..",
+    ".GGGGGGGGGG.",
+    ".GWKKGGKKWG.",
+    "GGWKKGGKKWGG",
+    "GGGGGGGGGGGG",
+    "GGGGGGGGGGGG",
+    ".GGGGGGGGGG.",
+    "..GGGGGGGG..",
+    ".DDDDDDDDDD."
+  ];
+  var GPAL = { G:'#A85B1A', D:'#5C2A06', W:'#FFFFFF', K:'#222222' };
+
+  function buildHtmlPixels(container, map, pal, px) {
+    map.forEach(function (row, r) {
+      row.split('').forEach(function (ch, c) {
+        if (ch === '.') return;
+        var d = document.createElement('div');
+        d.style.cssText = 'position:absolute;left:' + (c * px) + 'px;top:' + (r * px) +
+          'px;width:' + (px + 0.6) + 'px;height:' + (px + 0.6) + 'px;background:' + pal[ch];
+        container.appendChild(d);
+      });
+    });
+  }
+
+  /* ================= 车轮辐条 ================= */
+  function buildWheel(g, cx, cy) {
+    for (var i = 0; i < 12; i++) {
+      var a = i * Math.PI / 6;
+      var ln = document.createElementNS(SVGNS, 'line');
+      ln.setAttribute('x1', cx); ln.setAttribute('y1', cy);
+      ln.setAttribute('x2', cx + 44 * Math.cos(a));
+      ln.setAttribute('y2', cy + 44 * Math.sin(a));
+      ln.setAttribute('stroke', '#9AA0A6'); ln.setAttribute('stroke-width', '2');
+      g.appendChild(ln);
+    }
+    var hub = document.createElementNS(SVGNS, 'circle');
+    hub.setAttribute('cx', cx); hub.setAttribute('cy', cy); hub.setAttribute('r', 6);
+    hub.setAttribute('fill', '#888'); g.appendChild(hub);
+    var dot = document.createElementNS(SVGNS, 'circle');  // 彩色气门点，转动更明显
+    dot.setAttribute('cx', cx + 30); dot.setAttribute('cy', cy); dot.setAttribute('r', 4);
+    dot.setAttribute('fill', '#FFD23F'); g.appendChild(dot);
+  }
+  var wRear = document.getElementById('wRear'), wFront = document.getElementById('wFront');
+  buildWheel(wRear, 410, 375); buildWheel(wFront, 550, 375);
+
+  /* ================= 音效（WebAudio 合成，无素材） ================= */
+  var AC = null;
+  function initAudio() {
+    if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  }
+  function tone(f0, f1, dur, type, vol) {
+    if (!AC) return;
+    try {
+      var t0 = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+      o.type = type || 'square';
+      o.frequency.setValueAtTime(f0, t0);
+      o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t0 + dur);
+      g.gain.setValueAtTime(vol || 0.06, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) {}
+  }
+  var sfxJump  = function () { tone(280, 700, 0.16, 'square', 0.05); };
+  var sfxCoin  = function () { tone(1046, 1568, 0.1, 'square', 0.06); };
+  var sfxStomp = function () { tone(300, 70, 0.12, 'sawtooth', 0.08); };
+  var sfxCrash = function () { tone(320, 60, 0.4, 'sawtooth', 0.09); };
+
+  /* ================= 游戏状态 ================= */
+  var S = {
+    t: 0, speed: 383, score: 0,
+    hi: parseInt(localStorage.getItem('mario-bike-hi') || '0', 10) || 0,
+    jumpY: 0, vy: 0, jumping: false,
+    crashT: 0, invUntil: 0
+  };
+  var scoreEl = document.getElementById('score'), hiEl = document.getElementById('hi');
+  var flashEl = document.getElementById('flash');
+  var rider = document.getElementById('rider');
+
+  /* ================= 腿部反向运动学 ================= */
+  var HIP = { x: 433, y: 292 }, BB = { x: 478, y: 374 }, CRANK = 26, L1 = 58, L2 = 62;
+  var frontThigh = document.getElementById('frontThigh'), frontShin = document.getElementById('frontShin'),
+      frontShoe  = document.getElementById('frontShoe'),
+      rearThigh  = document.getElementById('rearThigh'),  rearShin  = document.getElementById('rearShin'),
+      rearShoe   = document.getElementById('rearShoe'),
+      crankA = document.getElementById('crankA'), crankB = document.getElementById('crankB'),
+      pedalA = document.getElementById('pedalA'), pedalB = document.getElementById('pedalB');
+
+  function setLine(el, p1, p2) {
+    el.setAttribute('x1', p1.x); el.setAttribute('y1', p1.y);
+    el.setAttribute('x2', p2.x); el.setAttribute('y2', p2.y);
+  }
+  function solveLeg(foot) {           // 双骨 IK，膝盖取朝前（x 大）的解
+    var dx = foot.x - HIP.x, dy = foot.y - HIP.y;
+    var d = Math.hypot(dx, dy), maxD = L1 + L2 - 0.5;
+    if (d > maxD) { dx *= maxD / d; dy *= maxD / d; d = maxD; foot = { x: HIP.x + dx, y: HIP.y + dy }; }
+    var cosA = Math.min(1, Math.max(-1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)));
+    var a = Math.acos(cosA), base = Math.atan2(dy, dx);
+    var k1 = { x: HIP.x + L1 * Math.cos(base + a), y: HIP.y + L1 * Math.sin(base + a) };
+    var k2 = { x: HIP.x + L1 * Math.cos(base - a), y: HIP.y + L1 * Math.sin(base - a) };
+    return { knee: k1.x > k2.x ? k1 : k2, foot: foot };
+  }
+  function drawLeg(foot, thigh, shin, shoe) {
+    var r = solveLeg(foot);
+    setLine(thigh, HIP, r.knee);
+    setLine(shin, r.knee, r.foot);
+    shoe.setAttribute('x', r.foot.x - 15);
+    shoe.setAttribute('y', r.foot.y - 13);
+  }
+
+  /* ================= 金币 ================= */
+  var coins = [], coinTimer = 0.8;
+  function spawnCoin(x, y) {
+    var el = document.createElement('div');
+    el.className = 'coin'; el.style.top = y + 'px';
+    stage.appendChild(el);
+    coins.push({ el: el, x: x, y: y, got: false });
+  }
+  function spawnCoins() {
+    if (Math.random() < 0.5) {
+      spawnCoin(1000, 190 + Math.random() * 90);
+    } else {                                    // 弧形三连金币
+      spawnCoin(1000, 240); spawnCoin(1046, 192); spawnCoin(1092, 240);
+    }
+  }
+  function plusText(x, y, txt) {
+    var el = document.createElement('div');
+    el.className = 'plus'; el.textContent = txt;
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    stage.appendChild(el);
+    setTimeout(function () { el.remove(); }, 720);
+  }
+  function addScore(n) {
+    S.score += n;
+    if (S.score > S.hi) { S.hi = S.score; localStorage.setItem('mario-bike-hi', String(S.hi)); }
+  }
+
+  /* ================= 板栗仔 ================= */
+  var goombas = [], goombaTimer = 3.2;
+  function spawnGoomba() {
+    var el = document.createElement('div');
+    el.className = 'goomba'; el.style.top = '360px';
+    var inner = document.createElement('div');
+    inner.className = 'g-inner';
+    buildHtmlPixels(inner, GOOMBA, GPAL, 7);
+    el.appendChild(inner);
+    stage.appendChild(el);
+    goombas.push({ el: el, inner: inner, x: 1000, squash: false, dead: 0 });
+  }
+
+  /* ================= 输入 ================= */
+  function doJump() {
+    initAudio();
+    if (S.jumping || S.crashT > 0) return;
+    S.jumping = true; S.vy = -790; sfxJump();
+  }
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      e.preventDefault(); doJump();
+    }
+  });
+  stage.addEventListener('pointerdown', doJump);
+
+  /* ================= 主循环 ================= */
+  var wheelA = 0, theta = 0, last = performance.now();
+
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    S.t += dt;
+
+    /* 车轮 & 曲柄 */
+    wheelA = (wheelA + S.speed / 55 * dt * 57.2958) % 360;
+    wRear.setAttribute('transform', 'rotate(' + wheelA + ' 410 375)');
+    wFront.setAttribute('transform', 'rotate(' + wheelA + ' 550 375)');
+    theta = (theta + dt * Math.PI * 2 / 1.5) % (Math.PI * 2);
+
+    var pA = { x: BB.x + CRANK * Math.cos(theta), y: BB.y + CRANK * Math.sin(theta) };
+    var pB = { x: BB.x - CRANK * Math.cos(theta), y: BB.y - CRANK * Math.sin(theta) };
+    setLine(crankA, BB, pA); setLine(crankB, BB, pB);
+    pedalA.setAttribute('x', pA.x - 8); pedalA.setAttribute('y', pA.y - 3);
+    pedalB.setAttribute('x', pB.x - 8); pedalB.setAttribute('y', pB.y - 3);
+    drawLeg(pA, frontThigh, frontShin, frontShoe);   // 近侧腿
+    drawLeg(pB, rearThigh, rearShin, rearShoe);      // 远侧腿
+
+    /* 跳跃物理 */
+    if (S.jumping) {
+      S.vy += 2400 * dt; S.jumpY += S.vy * dt;
+      if (S.jumpY >= 0) { S.jumpY = 0; S.vy = 0; S.jumping = false; }
+    }
+
+    /* 车身起伏（蹬踏节奏）+ 撞车旋转 */
+    var bob = S.jumping ? 0 : 2.2 * Math.sin(theta * 2);
+    var spin = 0;
+    if (S.crashT > 0) {
+      S.crashT -= dt;
+      spin = -360 * (1 - Math.max(0, S.crashT) / 0.9);
+      if (S.crashT <= 0) spin = 0;
+    }
+    rider.setAttribute('transform',
+      'translate(0 ' + (bob + S.jumpY).toFixed(2) + ')' + (spin ? ' rotate(' + spin.toFixed(1) + ' 480 360)' : ''));
+
+    /* 无敌闪烁 */
+    rider.setAttribute('opacity', S.t < S.invUntil ? ((S.t * 10) % 2 < 1 ? 0.35 : 1) : 1);
+
+    /* 红闪 */
+    var fo = parseFloat(flashEl.style.opacity || 0);
+    if (fo > 0) flashEl.style.opacity = Math.max(0, fo - dt * 2.2);
+
+    /* 金币 */
+    coinTimer -= dt;
+    if (coinTimer <= 0) { spawnCoins(); coinTimer = 1.2 + Math.random() * 1.1; }
+    var chestY = 240 + S.jumpY;
+    for (var i = coins.length - 1; i >= 0; i--) {
+      var c = coins[i];
+      c.x -= S.speed * dt;
+      c.el.style.left = c.x + 'px';
+      if (!c.got && Math.abs(c.x + 13 - 470) < 60 && Math.abs(c.y + 17 - chestY) < 95) {
+        c.got = true; c.el.classList.add('got');
+        addScore(200); plusText(c.x, c.y - 12, '+200'); sfxCoin();
+        (function (el) { setTimeout(function () { el.remove(); }, 260); })(c.el);
+        coins.splice(i, 1); continue;
+      }
+      if (c.x < -80) { c.el.remove(); coins.splice(i, 1); }
+    }
+
+    /* 板栗仔 */
+    goombaTimer -= dt;
+    if (goombaTimer <= 0) { spawnGoomba(); goombaTimer = 3.5 + Math.random() * 3; }
+    var mBottom = 430 + S.jumpY;
+    for (var j = goombas.length - 1; j >= 0; j--) {
+      var g = goombas[j];
+      if (g.squash) {
+        g.dead += dt;
+        g.inner.style.transform = 'scaleY(' + Math.max(0.1, 1 - g.dead * 6) + ')';
+        g.inner.style.opacity = Math.max(0, 1 - g.dead * 1.6);
+        if (g.dead > 0.6) { g.el.remove(); goombas.splice(j, 1); }
+        continue;
+      }
+      g.x -= (S.speed + 45) * dt;
+      g.el.style.left = g.x + 'px';
+      if (g.x < -120) { g.el.remove(); goombas.splice(j, 1); continue; }
+
+      var overlapX = g.x < 590 && g.x + 84 > 440;
+      if (overlapX && S.crashT <= 0 && S.t >= S.invUntil) {
+        if (S.vy > 0 && mBottom < 386) {                 // 踩中！
+          g.squash = true; addScore(500);
+          plusText(g.x + 10, 330, '+500');
+          S.vy = -520; sfxStomp();
+        } else if (mBottom > 372) {                      // 撞上了
+          S.crashT = 0.9; S.score = 0;
+          S.vy = -520; S.jumping = true;
+          S.invUntil = S.t + 2.5;
+          flashEl.style.opacity = 0.45; sfxCrash();
+          plusText(455, 200, 'MAMA MIA!');
+        }
+      }
+    }
+
+    /* HUD */
+    scoreEl.textContent = String(S.score).padStart(6, '0');
+    hiEl.textContent = String(S.hi).padStart(6, '0');
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

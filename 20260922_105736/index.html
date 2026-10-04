@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金毛快线 · Golden Ride</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a1230; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+  }
+  .stage { position: fixed; inset: 0; }
+  #scene { width: 100%; height: 100%; display: block; }
+  #scene stop, #scene rect, #scene path, #scene circle, #scene ellipse, #scene line {
+    transition: fill .7s ease, stop-color .7s ease, stroke .7s ease;
+  }
+  #rig, #bodyG, #headG, #wheelRear, #wheelFront { will-change: transform; }
+  .overlay {
+    position: fixed; top: 22px; left: 26px; color: var(--text); z-index: 5;
+    pointer-events: none; user-select: none;
+  }
+  .overlay h1 { font-size: 26px; letter-spacing: 1px; font-weight: 800; text-shadow: 0 2px 12px rgba(40,40,20,.2); }
+  .overlay p { margin-top: 6px; font-size: 13px; opacity: .75; letter-spacing: .5px; }
+  .controls {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; z-index: 5;
+  }
+  .controls button {
+    border: 1px solid rgba(255,255,255,.4); outline: none; cursor: pointer;
+    background: rgba(30, 50, 30, .42); color: #fff; backdrop-filter: blur(8px);
+    padding: 8px 16px; border-radius: 999px; font-size: 13px; letter-spacing: .5px;
+    transition: transform .15s ease, background .2s ease;
+  }
+  .controls button:hover { background: rgba(30, 50, 30, .62); transform: translateY(-2px); }
+  .hint {
+    position: fixed; right: 22px; bottom: 22px; z-index: 5; color: var(--text);
+    font-size: 12px; opacity: .55; pointer-events: none; user-select: none; letter-spacing: .5px;
+  }
+  :root {
+    --text: #2d4a1e;
+    --sky-1: #8fd4ff; --sky-2: #cfeaff; --sky-3: #fff6dc;
+    --sun-core: #fff3c4; --sun-ray: #ffd76a;
+    --hill-1: #a8d98a; --hill-2: #82c469; --hill-3: #5da84a;
+    --field-1: #9ccb6e; --field-2: #7ab354;
+    --road-1: #9aa0a6; --road-2: #7c8288;
+    --dash: #fff3d0; --edge: #f4f7f8;
+    --fence: #d9b07c; --fence-line: #9c7038;
+    --trunk: #8a5a33; --leaf-1: #5da84a; --leaf-2: #48913c; --leaf-3: #3a7a33;
+    --fur: #eab04a; --fur-2: #d99430; --fur-light: #f7d9a0; --fur-line: #b57a22;
+    --nose: #2b2b2b; --tongue: #f0728c; --tongue-2: #d95c78;
+    --bandana: #e2564a; --bandana-2: #b23a30; --tag: #f5c542;
+    --petal: #ffc4d6; --petal-2: #ffb0c8;
+    --frame: #4a90d9; --frame-dark: #2f6cb0;
+    --tire: #33383d; --rim: #dfe6ea; --spoke: #a9b7bf; --hub: #5a6a72;
+    --shadow: rgba(20, 40, 20, .25);
+    --basket: #c99a58; --basket-line: #9c7033; --bone: #f5efe0; --bone-line: #cbbfa5;
+    --star-op: 0; --sun-op: 1; --moon-op: 0;
+  }
+  body.night {
+    --text: #d8e8ff;
+    --sky-1: #0a1230; --sky-2: #1a2c52; --sky-3: #37406a;
+    --sun-core: #e9edf5; --sun-ray: #b9c6dd;
+    --hill-1: #2c4a3a; --hill-2: #223c30; --hill-3: #1a3027;
+    --field-1: #27402f; --field-2: #1d3325;
+    --road-1: #2f363d; --road-2: #232a30;
+    --dash: #ffe9c4; --edge: #c7d3da;
+    --fence: #5c4a30; --fence-line: #3c2e1c;
+    --trunk: #3d2a1a; --leaf-1: #1f4429; --leaf-2: #193720; --leaf-3: #142b1a;
+    --fur: #c9923c; --fur-2: #b57a28; --fur-light: #d9b478; --fur-line: #8a5c18;
+    --nose: #141414; --tongue: #c95f78; --tongue-2: #a84a62;
+    --bandana: #c9453a; --bandana-2: #992f26; --tag: #d9ad2e;
+    --petal: #c98aa4; --petal-2: #b87a96;
+    --frame: #3570b0; --frame-dark: #24507f;
+    --tire: #1c242c; --rim: #8fa0aa; --spoke: #63737d; --hub: #33454f;
+    --shadow: rgba(0, 0, 0, .5);
+    --basket: #8f6d3c; --basket-line: #63481f; --bone: #cfc8b5; --bone-line: #9a927e;
+    --star-op: 1; --sun-op: 0; --moon-op: 1;
+  }
+  .dashmove { animation: dashmove .55s linear infinite; }
+  @keyframes dashmove { to { transform: translateX(-160px); } }
+  .dashmove2 { animation: dashmove2 .38s linear infinite; }
+  @keyframes dashmove2 { to { transform: translateX(-90px); } }
+  .fencemove { animation: fencemove .45s linear infinite; }
+  @keyframes fencemove { to { transform: translateX(-100px); } }
+  .rays { animation: spin 60s linear infinite; transform-origin: 190px 130px; transform-box: view-box; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #sunGroup { opacity: var(--sun-op); transition: opacity 1s ease; }
+  #moonGroup { opacity: var(--moon-op); transition: opacity 1s ease; }
+  .stars { opacity: var(--star-op); transition: opacity 1s ease; }
+  .star { fill: #fff; animation: twinkle 3.2s ease-in-out infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+  .clouda { animation: clouddrift 46s linear infinite; }
+  .cloudb { animation: clouddrift 64s linear infinite; animation-delay: -22s; }
+  .cloudc { animation: clouddrift 80s linear infinite; animation-delay: -50s; }
+  .cloudd { animation: clouddrift 38s linear infinite; animation-delay: -8s; }
+  @keyframes clouddrift { from { transform: translateX(1420px); } to { transform: translateX(-420px); } }
+  .birda { animation: birdfly 30s linear infinite; }
+  .birdb { animation: birdfly 44s linear infinite; animation-delay: -18s; }
+  .birdc { animation: birdfly 36s linear infinite; animation-delay: -30s; }
+  @keyframes birdfly { from { transform: translateX(1420px); } to { transform: translateX(-300px); } }
+  .hilla { animation: hillmove 30s linear infinite; }
+  .hillb { animation: hillmove 22s linear infinite; animation-delay: -11s; }
+  .hillc { animation: hillmove 17s linear infinite; animation-delay: -6s; }
+  @keyframes hillmove { from { transform: translateX(1500px); } to { transform: translateX(-700px); } }
+  .windblades { animation: spin 9s linear infinite; transform-origin: 190px 300px; transform-box: view-box; }
+  .treemove { animation: treemove 9s linear infinite; }
+  .treemove.t2 { animation-duration: 12s; animation-delay: -4s; }
+  .treemove.t3 { animation-duration: 15s; animation-delay: -9s; }
+  @keyframes treemove { from { transform: translateX(1400px); } to { transform: translateX(-320px); } }
+  .petal { animation: petalfall linear infinite; }
+  .petalsway { animation: sway ease-in-out infinite alternate; }
+  .petalspin { transform-box: fill-box; transform-origin: center; animation: petalspin 2.6s linear infinite; }
+  @keyframes petalfall { from { transform: translateY(-50px); } to { transform: translateY(770px); } }
+  @keyframes sway { from { transform: translateX(-26px); } to { transform: translateX(26px); } }
+  @keyframes petalspin { to { transform: rotate(360deg); } }
+  .bfly { animation: flydrift linear infinite; }
+  .bflybob { animation: bflybob 1.1s ease-in-out infinite alternate; }
+  .bw { transform-box: fill-box; animation: wingflap .16s ease-in-out infinite alternate; }
+  .bw.right { animation-delay: -.08s; }
+  @keyframes flydrift { from { transform: translateX(1420px); } to { transform: translateX(-300px); } }
+  @keyframes bflybob { from { transform: translateY(-8px); } 50% { transform: translateY(0); } to { transform: translateY(8px); } }
+  @keyframes wingflap { from { transform: scaleX(1); } to { transform: scaleX(.3); } }
+  .firefly { animation: flydrift linear infinite; }
+  .ffsway { animation: sway ease-in-out infinite alternate; }
+  .ffblink { animation: twinkle 2.4s ease-in-out infinite; }
+  .grass { animation: grassmove .5s linear infinite; }
+  @keyframes grassmove { to { transform: translateX(-300px); } }
+  .speedline { animation: speedline .55s linear infinite; opacity: 0; }
+  .speedline.s2 { animation-duration: .7s; animation-delay: -0.2s; }
+  .speedline.s3 { animation-duration: .48s; animation-delay: -0.35s; }
+  .speedline.s4 { animation-duration: .62s; animation-delay: -0.1s; }
+  .speedline.s5 { animation-duration: .52s; animation-delay: -0.42s; }
+  @keyframes speedline {
+    0% { transform: translateX(0); opacity: 0; }
+    12% { opacity: .8; }
+    85% { opacity: .5; }
+    100% { transform: translateX(-900px); opacity: 0; }
+  }
+  .signmove { animation: signmove 2.6s linear infinite; }
+  @keyframes signmove { from { transform: translateX(1400px); } to { transform: translateX(-260px); } }
+  .paused .dashmove, .paused .dashmove2, .paused .fencemove, .paused .grass, .paused .speedline,
+  .paused .rays, .paused .clouda, .paused .cloudb, .paused .cloudc, .paused .cloudd,
+  .paused .birda, .paused .birdb, .paused .birdc,
+  .paused .hilla, .paused .hillb, .paused .hillc,
+  .paused .treemove, .paused .windblades, .paused .signmove,
+  .paused .petal, .paused .petalsway, .paused .petalspin,
+  .paused .bfly, .paused .bflybob, .paused .bw,
+  .paused .firefly, .paused .ffsway, .paused .ffblink { animation-play-state: paused; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <svg id="scene" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="一只金毛犬在春日乡村公路上骑自行车的动画">
+    <defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="sky-s1" />
+        <stop offset="0.55" class="sky-s2" />
+        <stop offset="1" class="sky-s3" />
+      </linearGradient>
+      <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" class="glow-s1" />
+        <stop offset="1" class="glow-s2" />
+      </radialGradient>
+      <linearGradient id="fieldGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="field-s1" />
+        <stop offset="1" class="field-s2" />
+      </linearGradient>
+      <linearGradient id="roadGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="road-s1" />
+        <stop offset="1" class="road-s2" />
+      </linearGradient>
+      <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="body-s1" />
+        <stop offset="1" class="body-s2" />
+      </linearGradient>
+      <style>
+        .sky-s1 { stop-color: var(--sky-1); }
+        .sky-s2 { stop-color: var(--sky-2); }
+        .sky-s3 { stop-color: var(--sky-3); }
+        .glow-s1 { stop-color: var(--sun-core); stop-opacity: .55; }
+        .glow-s2 { stop-color: var(--sun-core); stop-opacity: 0; }
+        .field-s1 { stop-color: var(--field-1); }
+        .field-s2 { stop-color: var(--field-2); }
+        .road-s1 { stop-color: var(--road-1); }
+        .road-s2 { stop-color: var(--road-2); }
+        .body-s1 { stop-color: var(--fur); }
+        .body-s2 { stop-color: var(--fur-2); }
+      </style>
+    </defs>
+
+    <rect x="0" y="0" width="1280" height="440" fill="url(#skyGrad)" />
+    <g class="stars" id="stars"></g>
+    <g id="sunGroup">
+      <circle cx="190" cy="130" r="150" fill="url(#sunGlow)" />
+      <g class="rays">
+        <g stroke="var(--sun-ray)" stroke-width="6" stroke-linecap="round">
+          <line x1="190" y1="40" x2="190" y2="16" />
+          <line x1="190" y1="220" x2="190" y2="244" />
+          <line x1="100" y1="130" x2="76" y2="130" />
+          <line x1="280" y1="130" x2="304" y2="130" />
+          <line x1="124" y1="64" x2="106" y2="46" />
+          <line x1="256" y1="196" x2="274" y2="214" />
+          <line x1="256" y1="64" x2="274" y2="46" />
+          <line x1="124" y1="196" x2="106" y2="214" />
+        </g>
+      </g>
+      <circle cx="190" cy="130" r="56" fill="var(--sun-core)" />
+    </g>
+    <g id="moonGroup">
+      <circle cx="190" cy="130" r="52" fill="#e9edf5" />
+      <circle cx="174" cy="116" r="9" fill="#ccd5e2" />
+      <circle cx="204" cy="148" r="6" fill="#ccd5e2" />
+      <circle cx="198" cy="112" r="5" fill="#ccd5e2" />
+    </g>
+
+    <g class="clouda" opacity="0.95">
+      <g fill="#ffffff">
+        <ellipse cx="620" cy="90" rx="58" ry="24" />
+        <ellipse cx="670" cy="78" rx="44" ry="21" />
+        <ellipse cx="578" cy="100" rx="40" ry="17" />
+      </g>
+    </g>
+    <g class="cloudb" opacity="0.9">
+      <g fill="#ffffff">
+        <ellipse cx="1020" cy="70" rx="48" ry="19" />
+        <ellipse cx="1062" cy="60" rx="36" ry="17" />
+        <ellipse cx="986" cy="80" rx="34" ry="14" />
+      </g>
+    </g>
+    <g class="cloudc" opacity="0.8">
+      <g fill="#ffffff">
+        <ellipse cx="420" cy="160" rx="66" ry="22" />
+        <ellipse cx="472" cy="148" rx="44" ry="18" />
+        <ellipse cx="374" cy="170" rx="40" ry="15" />
+      </g>
+    </g>
+    <g class="cloudd" opacity="0.85">
+      <g fill="#ffffff">
+        <ellipse cx="850" cy="220" rx="44" ry="16" />
+        <ellipse cx="886" cy="212" rx="30" ry="14" />
+      </g>
+    </g>
+
+    <g class="birda" stroke="var(--fur-line)" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <path d="M 520 120 q 7 -9 14 0 q 7 -9 14 0" />
+      <path d="M 580 100 q 5 -7 10 0 q 5 -7 10 0" />
+    </g>
+    <g class="birdb" stroke="var(--fur-line)" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M 980 200 q 6 -8 12 0 q 6 -8 12 0" />
+    </g>
+    <g class="birdc" stroke="var(--fur-line)" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <path d="M 1120 90 q 7 -9 14 0 q 7 -9 14 0" />
+      <path d="M 1180 72 q 5 -7 10 0 q 5 -7 10 0" />
+    </g>
+
+    <g transform="translate(190 330)">
+      <rect x="-9" y="0" width="18" height="52" rx="4" fill="var(--fence)" stroke="var(--fence-line)" stroke-width="2" />
+      <g class="windblades" stroke="var(--fence-line)" stroke-width="3" fill="none">
+        <line x1="0" y1="-46" x2="0" y2="-8" />
+        <line x1="0" y1="-46" x2="33" y2="-13" />
+        <line x1="0" y1="-46" x2="-33" y2="-13" />
+        <line x1="0" y1="-46" x2="20" y2="-79" />
+        <line x1="0" y1="-46" x2="-20" y2="-79" />
+      </g>
+      <circle cx="0" cy="-46" r="6" fill="var(--fence)" stroke="var(--fence-line)" stroke-width="2" />
+    </g>
+
+    <g class="hilla">
+      <path d="M -100 470 Q 200 350 520 470 T 1180 470 L 1180 480 L -100 480 Z" fill="var(--hill-1)" opacity="0.9" />
+    </g>
+    <g class="hillb">
+      <path d="M -160 470 Q 160 372 500 470 T 1240 470 L 1240 482 L -160 482 Z" fill="var(--hill-2)" opacity="0.95" />
+    </g>
+    <g class="hillc">
+      <path d="M -220 470 Q 240 396 660 470 T 1300 470 L 1300 484 L -220 484 Z" fill="var(--hill-3)" />
+    </g>
+
+    <rect x="0" y="440" width="1280" height="180" fill="url(#fieldGrad)" />
+
+    <g class="treemove" transform="translate(0 0)">
+      <g transform="translate(300 560)">
+        <rect x="-7" y="-70" width="14" height="72" rx="5" fill="var(--trunk)" />
+        <circle cx="0" cy="-96" r="38" fill="var(--leaf-2)" />
+        <circle cx="-26" cy="-76" r="26" fill="var(--leaf-3)" />
+        <circle cx="26" cy="-78" r="24" fill="var(--leaf-1)" />
+        <circle cx="4" cy="-118" r="22" fill="var(--leaf-1)" />
+      </g>
+    </g>
+    <g class="treemove t2">
+      <g transform="translate(900 590)">
+        <rect x="-9" y="-96" width="18" height="98" rx="6" fill="var(--trunk)" />
+        <circle cx="0" cy="-128" r="52" fill="var(--leaf-2)" />
+        <circle cx="-36" cy="-100" r="34" fill="var(--leaf-3)" />
+        <circle cx="36" cy="-104" r="32" fill="var(--leaf-1)" />
+        <circle cx="6" cy="-158" r="28" fill="var(--leaf-1)" />
+      </g>
+    </g>
+    <g class="treemove t3">
+      <g transform="translate(1180 545)">
+        <rect x="-6" y="-56" width="12" height="58" rx="4" fill="var(--trunk)" />
+        <circle cx="0" cy="-76" r="30" fill="var(--leaf-2)" />
+        <circle cx="-20" cy="-60" r="20" fill="var(--leaf-3)" />
+        <circle cx="20" cy="-62" r="18" fill="var(--leaf-1)" />
+      </g>
+    </g>
+
+    <g class="fencemove">
+      <g fill="var(--fence)" stroke="var(--fence-line)" stroke-width="2">
+        <rect x="-100" y="590" width="9" height="52" rx="2" />
+        <rect x="0" y="590" width="9" height="52" rx="2" />
+        <rect x="100" y="590" width="9" height="52" rx="2" />
+        <rect x="200" y="590" width="9" height="52" rx="2" />
+        <rect x="300" y="590" width="9" height="52" rx="2" />
+        <rect x="400" y="590" width="9" height="52" rx="2" />
+        <rect x="500" y="590" width="9" height="52" rx="2" />
+        <rect x="600" y="590" width="9" height="52" rx="2" />
+        <rect x="700" y="590" width="9" height="52" rx="2" />
+        <rect x="800" y="590" width="9" height="52" rx="2" />
+        <rect x="900" y="590" width="9" height="52" rx="2" />
+        <rect x="1000" y="590" width="9" height="52" rx="2" />
+        <rect x="1100" y="590" width="9" height="52" rx="2" />
+        <rect x="1200" y="590" width="9" height="52" rx="2" />
+        <rect x="1300" y="590" width="9" height="52" rx="2" />
+      </g>
+      <rect x="-100" y="600" width="1500" height="7" rx="3" fill="var(--fence)" stroke="var(--fence-line)" stroke-width="2" />
+      <rect x="-100" y="624" width="1500" height="7" rx="3" fill="var(--fence)" stroke="var(--fence-line)" stroke-width="2" />
+    </g>
+
+    <rect x="0" y="644" width="1280" height="76" fill="url(#roadGrad)" />
+    <rect x="0" y="645" width="1280" height="4" fill="var(--edge)" opacity="0.8" />
+    <g class="dashmove" fill="var(--dash)">
+      <rect x="-160" y="666" width="72" height="9" rx="4" />
+      <rect x="0" y="666" width="72" height="9" rx="4" />
+      <rect x="160" y="666" width="72" height="9" rx="4" />
+      <rect x="320" y="666" width="72" height="9" rx="4" />
+      <rect x="480" y="666" width="72" height="9" rx="4" />
+      <rect x="640" y="666" width="72" height="9" rx="4" />
+      <rect x="800" y="666" width="72" height="9" rx="4" />
+      <rect x="960" y="666" width="72" height="9" rx="4" />
+      <rect x="1120" y="666" width="72" height="9" rx="4" />
+      <rect x="1280" y="666" width="72" height="9" rx="4" />
+      <rect x="1440" y="666" width="72" height="9" rx="4" />
+    </g>
+    <g class="dashmove2" fill="var(--edge)" opacity="0.18">
+      <rect x="-90" y="652" width="46" height="4" rx="2" />
+      <rect x="0" y="652" width="46" height="4" rx="2" />
+      <rect x="90" y="652" width="46" height="4" rx="2" />
+      <rect x="180" y="652" width="46" height="4" rx="2" />
+      <rect x="270" y="652" width="46" height="4" rx="2" />
+      <rect x="360" y="652" width="46" height="4" rx="2" />
+      <rect x="450" y="652" width="46" height="4" rx="2" />
+      <rect x="540" y="652" width="46" height="4" rx="2" />
+      <rect x="630" y="652" width="46" height="4" rx="2" />
+      <rect x="720" y="652" width="46" height="4" rx="2" />
+      <rect x="810" y="652" width="46" height="4" rx="2" />
+      <rect x="900" y="652" width="46" height="4" rx="2" />
+      <rect x="990" y="652" width="46" height="4" rx="2" />
+      <rect x="1080" y="652" width="46" height="4" rx="2" />
+      <rect x="1170" y="652" width="46" height="4" rx="2" />
+      <rect x="1260" y="652" width="46" height="4" rx="2" />
+      <rect x="1350" y="652" width="46" height="4" rx="2" />
+      <rect x="1440" y="652" width="46" height="4" rx="2" />
+    </g>
+
+    <ellipse id="shadow" cx="655" cy="658" rx="200" ry="12" fill="var(--shadow)" />
+
+    <g class="speedline" stroke="var(--edge)" stroke-width="5" stroke-linecap="round">
+      <line x1="980" y1="430" x2="1180" y2="430" />
+    </g>
+    <g class="speedline s2" stroke="var(--edge)" stroke-width="4" stroke-linecap="round">
+      <line x1="1000" y1="480" x2="1150" y2="480" />
+    </g>
+    <g class="speedline s3" stroke="var(--edge)" stroke-width="6" stroke-linecap="round">
+      <line x1="960" y1="560" x2="1210" y2="560" />
+    </g>
+    <g class="speedline s4" stroke="var(--edge)" stroke-width="4" stroke-linecap="round">
+      <line x1="1020" y1="620" x2="1160" y2="620" />
+    </g>
+    <g class="speedline s5" stroke="var(--edge)" stroke-width="5" stroke-linecap="round">
+      <line x1="990" y1="700" x2="1200" y2="700" />
+    </g>
+
+    <g class="signmove">
+      <rect x="0" y="560" width="7" height="96" fill="#7a8b96" />
+      <g transform="translate(3.5 560)">
+        <rect x="-46" y="-58" width="92" height="58" rx="10" fill="var(--bandana)" stroke="#ffffff" stroke-width="3" />
+        <g fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2">
+          <rect x="-16" y="-34" width="32" height="11" rx="5" />
+          <circle cx="-19" cy="-34" r="6" />
+          <circle cx="-19" cy="-23" r="6" />
+          <circle cx="19" cy="-34" r="6" />
+          <circle cx="19" cy="-23" r="6" />
+        </g>
+        <g stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+          <line x1="-13" y1="-12" x2="13" y2="-12" />
+          <line x1="-13" y1="-4" x2="13" y2="-4" />
+        </g>
+      </g>
+    </g>
+
+    <g id="rig">
+      <g id="wheelRear">
+        <circle cx="545" cy="575" r="82" fill="none" stroke="var(--tire)" stroke-width="13" />
+        <circle cx="545" cy="575" r="72" fill="none" stroke="var(--rim)" stroke-width="5" />
+        <g stroke="var(--spoke)" stroke-width="3">
+          <line x1="545" y1="505" x2="545" y2="645" />
+          <line x1="475" y1="575" x2="615" y2="575" />
+          <line x1="495" y1="525" x2="595" y2="625" />
+          <line x1="595" y1="525" x2="495" y2="625" />
+          <line x1="513" y1="543" x2="577" y2="607" />
+          <line x1="577" y1="543" x2="513" y2="607" />
+          <line x1="513" y1="607" x2="577" y2="543" />
+          <line x1="577" y1="607" x2="513" y2="543" />
+        </g>
+        <rect x="542" y="505" width="6" height="14" rx="3" fill="var(--bandana)" />
+        <circle cx="545" cy="575" r="9" fill="var(--hub)" />
+      </g>
+      <path d="M 500 496 A 82 82 0 0 1 590 496" fill="none" stroke="var(--bandana)" stroke-width="7" stroke-linecap="round" />
+
+      <g id="wheelFront">
+        <circle cx="775" cy="575" r="82" fill="none" stroke="var(--tire)" stroke-width="13" />
+        <circle cx="775" cy="575" r="72" fill="none" stroke="var(--rim)" stroke-width="5" />
+        <g stroke="var(--spoke)" stroke-width="3">
+          <line x1="775" y1="505" x2="775" y2="645" />
+          <line x1="705" y1="575" x2="845" y2="575" />
+          <line x1="725" y1="525" x2="825" y2="625" />
+          <line x1="825" y1="525" x2="725" y2="625" />
+          <line x1="743" y1="543" x2="807" y2="607" />
+          <line x1="807" y1="543" x2="743" y2="607" />
+          <line x1="743" y1="607" x2="807" y2="543" />
+          <line x1="807" y1="607" x2="743" y2="543" />
+        </g>
+        <rect x="772" y="505" width="6" height="14" rx="3" fill="var(--bandana)" />
+        <circle cx="775" cy="575" r="9" fill="var(--hub)" />
+      </g>
+      <path d="M 742 496 A 82 82 0 0 1 808 496" fill="none" stroke="var(--bandana)" stroke-width="7" stroke-linecap="round" />
+
+      <g stroke="var(--frame)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <line x1="545" y1="575" x2="640" y2="600" />
+        <line x1="640" y1="600" x2="602" y2="452" />
+        <line x1="602" y1="452" x2="752" y2="428" />
+        <line x1="640" y1="600" x2="762" y2="480" />
+        <line x1="762" y1="480" x2="752" y2="428" />
+        <line x1="762" y1="480" x2="775" y2="575" stroke-width="9" />
+        <line x1="752" y1="428" x2="766" y2="404" stroke-width="9" />
+        <path d="M 766 404 L 742 398" stroke-width="9" />
+      </g>
+      <path d="M 586 418 L 628 412 L 632 426 L 590 432 Z" fill="var(--fur-line)" />
+
+      <line x1="545" y1="568" x2="640" y2="593" stroke="var(--frame-dark)" stroke-width="4" />
+      <line x1="545" y1="582" x2="640" y2="607" stroke="var(--frame-dark)" stroke-width="4" />
+      <circle cx="545" cy="575" r="11" fill="none" stroke="var(--frame-dark)" stroke-width="4" />
+
+      <g id="gear">
+        <circle cx="640" cy="600" r="21" fill="none" stroke="var(--frame-dark)" stroke-width="9" stroke-dasharray="7 6" />
+      </g>
+      <line id="crankA" x1="640" y1="600" x2="666" y2="600" stroke="var(--fur-line)" stroke-width="9" stroke-linecap="round" />
+      <line id="crankB" x1="640" y1="600" x2="614" y2="600" stroke="var(--fur-line)" stroke-width="9" stroke-linecap="round" />
+      <g id="pedalA" fill="var(--fur-line)">
+        <rect x="-14" y="-4" width="28" height="9" rx="4" />
+      </g>
+      <g id="pedalB" fill="var(--fur-line)">
+        <rect x="-14" y="-4" width="28" height="9" rx="4" />
+      </g>
+
+      <path id="legFar" d="" fill="none" stroke="var(--fur-2)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+      <g id="footFar" fill="var(--fur-2)" stroke="var(--fur-line)" stroke-width="2">
+        <path d="M 0 0 L 34 -9 L 44 2 L 34 11 L 0 9 Z" />
+      </g>
+
+      <g id="bodyG">
+        <g id="tailG">
+          <g id="tailTip">
+            <path d="M -66 -34 C -82 -44 -98 -50 -112 -46" fill="none" stroke="var(--fur-light)" stroke-width="12" stroke-linecap="round" />
+          </g>
+          <path d="M 0 0 C -28 -16 -50 -28 -70 -36" fill="none" stroke="var(--fur-2)" stroke-width="21" stroke-linecap="round" />
+        </g>
+        <ellipse cx="600" cy="356" rx="92" ry="64" fill="url(#bodyGrad)" stroke="var(--fur-line)" stroke-width="2.5" transform="rotate(-8 600 356)" />
+        <ellipse cx="614" cy="384" rx="62" ry="40" fill="var(--fur-light)" opacity="0.85" />
+        <g id="armFarG">
+          <path d="M 652 344 Q 692 364 726 384" fill="none" stroke="var(--fur-2)" stroke-width="17" stroke-linecap="round" />
+          <circle cx="728" cy="386" r="10" fill="var(--fur-2)" stroke="var(--fur-line)" stroke-width="2" />
+        </g>
+        <g id="armG">
+          <path d="M 664 352 Q 702 372 740 392" fill="none" stroke="var(--fur)" stroke-width="18" stroke-linecap="round" />
+          <circle cx="742" cy="394" r="10" fill="var(--fur)" stroke="var(--fur-line)" stroke-width="2" />
+        </g>
+        <path d="M 674 330 C 692 302 700 274 712 252" fill="none" stroke="var(--fur)" stroke-width="42" stroke-linecap="round" />
+        <ellipse cx="692" cy="308" rx="24" ry="10" fill="var(--bandana-2)" transform="rotate(-42 692 308)" />
+        <ellipse cx="692" cy="305" rx="24" ry="10" fill="var(--bandana)" transform="rotate(-42 692 305)" />
+        <circle cx="700" cy="296" r="5" fill="var(--tag)" stroke="var(--fur-line)" stroke-width="1.5" />
+        <path id="bandanaTail" d="" fill="none" stroke="var(--bandana)" stroke-width="10" stroke-linecap="round" />
+        <g id="headG">
+          <g id="earFarG">
+            <path d="M 700 214 C 724 230 728 274 712 294 C 698 278 692 238 700 214 Z" fill="var(--fur-2)" stroke="var(--fur-line)" stroke-width="2" stroke-linejoin="round" />
+          </g>
+          <circle cx="720" cy="250" r="46" fill="url(#bodyGrad)" stroke="var(--fur-line)" stroke-width="2.5" />
+          <g id="earG">
+            <path d="M 728 212 C 756 230 760 278 742 298 C 726 282 716 240 728 212 Z" fill="var(--fur)" stroke="var(--fur-line)" stroke-width="2" stroke-linejoin="round" />
+          </g>
+          <ellipse cx="764" cy="262" rx="27" ry="19" fill="var(--fur-light)" stroke="var(--fur-line)" stroke-width="2" />
+          <path d="M 774 244 Q 790 242 792 251 Q 790 259 776 259 Q 768 251 774 244 Z" fill="var(--nose)" />
+          <circle cx="784" cy="249" r="2" fill="#ffffff" opacity="0.5" />
+          <path d="M 748 266 Q 764 288 784 268" fill="none" stroke="var(--nose)" stroke-width="4" stroke-linecap="round" />
+          <g id="tongueG">
+            <ellipse cx="766" cy="278" rx="10" ry="8" fill="var(--tongue)" stroke="var(--tongue-2)" stroke-width="2" />
+            <line x1="762" y1="282" x2="770" y2="282" stroke="var(--tongue-2)" stroke-width="2" stroke-linecap="round" />
+          </g>
+          <circle cx="712" cy="240" r="5.5" fill="#241a10" />
+          <circle cx="713.6" cy="238" r="1.6" fill="#ffffff" />
+          <rect id="eyelid" x="704" y="231" width="18" height="17" rx="8" fill="var(--fur)" opacity="0" />
+          <ellipse cx="784" cy="272" rx="4" ry="3" fill="var(--tongue)" opacity="0.35" />
+        </g>
+      </g>
+
+      <path id="legNear" d="" fill="none" stroke="var(--fur)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+      <g id="footNear" fill="var(--fur)" stroke="var(--fur-line)" stroke-width="2">
+        <path d="M 0 0 L 34 -9 L 44 2 L 34 11 L 0 9 Z" />
+      </g>
+
+      <g transform="translate(766 442)">
+        <path d="M 0 0 L 80 0 L 72 46 L 8 46 Z" fill="var(--basket)" stroke="var(--basket-line)" stroke-width="2.5" stroke-linejoin="round" />
+        <g stroke="var(--basket-line)" stroke-width="2" opacity="0.7">
+          <line x1="2" y1="15" x2="78" y2="15" />
+          <line x1="4" y1="31" x2="76" y2="31" />
+          <line x1="28" y1="0" x2="28" y2="46" />
+          <line x1="52" y1="0" x2="52" y2="46" />
+        </g>
+        <g transform="translate(24 6) rotate(-12)" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2">
+          <rect x="-14" y="-4" width="28" height="9" rx="4" />
+          <circle cx="-17" cy="-4" r="5" />
+          <circle cx="-17" y1="5" r="5" />
+          <circle cx="17" cy="-4" r="5" />
+          <circle cx="17" cy="5" r="5" />
+        </g>
+        <g transform="translate(52 10) rotate(14)" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2">
+          <rect x="-11" y="-3" width="22" height="7" rx="3" />
+          <circle cx="-13" cy="-3" r="4" />
+          <circle cx="-13" cy="4" r="4" />
+          <circle cx="13" cy="-3" r="4" />
+          <circle cx="13" cy="4" r="4" />
+        </g>
+      </g>
+    </g>
+
+    <g id="petals"></g>
+    <g id="butterflies"></g>
+    <g id="fireflies"></g>
+
+    <g class="grass">
+      <g fill="var(--leaf-3)">
+        <path d="M -300 720 Q -296 700 -290 720 Q -286 702 -280 720 Z" />
+        <path d="M -225 720 Q -221 704 -215 720 Q -211 706 -205 720 Z" />
+        <path d="M -150 720 Q -146 698 -140 720 Q -136 700 -130 720 Z" />
+        <path d="M -75 720 Q -71 704 -65 720 Q -61 706 -55 720 Z" />
+        <path d="M 0 720 Q 4 700 10 720 Q 14 702 20 720 Z" />
+        <path d="M 75 720 Q 79 704 85 720 Q 89 706 95 720 Z" />
+        <path d="M 150 720 Q 154 698 160 720 Q 164 700 170 720 Z" />
+        <path d="M 225 720 Q 229 704 235 720 Q 239 706 245 720 Z" />
+        <path d="M 300 720 Q 304 700 310 720 Q 314 702 320 720 Z" />
+        <path d="M 375 720 Q 379 704 385 720 Q 389 706 395 720 Z" />
+        <path d="M 450 720 Q 454 698 460 720 Q 464 700 470 720 Z" />
+        <path d="M 525 720 Q 529 704 535 720 Q 539 706 545 720 Z" />
+        <path d="M 600 720 Q 604 700 610 720 Q 614 702 620 720 Z" />
+        <path d="M 675 720 Q 679 704 685 720 Q 689 706 695 720 Z" />
+        <path d="M 750 720 Q 754 698 760 720 Q 764 700 770 720 Z" />
+        <path d="M 825 720 Q 829 704 835 720 Q 839 706 845 720 Z" />
+        <path d="M 900 720 Q 904 700 910 720 Q 914 702 920 720 Z" />
+        <path d="M 975 720 Q 979 704 985 720 Q 989 706 995 720 Z" />
+        <path d="M 1050 720 Q 1054 698 1060 720 Q 1064 700 1070 720 Z" />
+        <path d="M 1125 720 Q 1129 704 1135 720 Q 1139 706 1145 720 Z" />
+        <path d="M 1200 720 Q 1204 700 1210 720 Q 1214 702 1220 720 Z" />
+        <path d="M 1275 720 Q 1279 704 1285 720 Q 1289 706 1295 720 Z" />
+        <path d="M 1350 720 Q 1354 700 1360 720 Q 1364 702 1370 720 Z" />
+      </g>
+    </g>
+  </svg>
+</div>
+
+<div class="overlay">
+  <h1>金毛快线</h1>
+  <p>Golden Ride · 春日乡村骑行中</p>
+</div>
+<div class="controls">
+  <button id="btnPause">⏸ 暂停</button>
+  <button id="btnSpeed">速度 1.0×</button>
+  <button id="btnNight">🌙 星夜</button>
+</div>
+<div class="hint">空格 暂停 · S 变速 · N 昼夜</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var rig = $("rig"), bodyG = $("bodyG"), headG = $("headG");
+  var tailG = $("tailG"), tailTip = $("tailTip"), earG = $("earG"), earFarG = $("earFarG");
+  var armG = $("armG"), armFarG = $("armFarG"), tongueG = $("tongueG");
+  var wheelRear = $("wheelRear"), wheelFront = $("wheelFront"), gear = $("gear");
+  var crankA = $("crankA"), crankB = $("crankB"), pedalA = $("pedalA"), pedalB = $("pedalB");
+  var legFar = $("legFar"), legNear = $("legNear"), footFar = $("footFar"), footNear = $("footNear");
+  var bandanaTail = $("bandanaTail"), eyelid = $("eyelid"), shadow = $("shadow");
+  var stars = $("stars"), petals = $("petals"), butterflies = $("butterflies"), fireflies = $("fireflies");
+
+  var BB = { x: 640, y: 600 }, CR = 26;
+  var HIP = { near: { x: 610, y: 405 }, far: { x: 585, y: 398 } };
+  var LEG = { near: { l1: 100, l2: 125 }, far: { l1: 108, l2: 132 } };
+
+  var speeds = [0.5, 1, 1.6], speedIdx = 1;
+  var paused = false, hidden = false, t = 0, last = performance.now();
+  var wheelDeg = 0, crankDeg = 0;
+  var nextBlink = 2 + Math.random() * 3, blinkLeft = 0;
+
+  var starHTML = "";
+  for (var i = 0; i < 60; i++) {
+    var sx = (Math.random() * 1280).toFixed(1);
+    var sy = (Math.random() * 400).toFixed(1);
+    var sr = (0.6 + Math.random() * 1.4).toFixed(2);
+    var dur = (2.2 + Math.random() * 3).toFixed(2);
+    var del = (Math.random() * 3).toFixed(2);
+    starHTML += '<circle class="star" cx="' + sx + '" cy="' + sy + '" r="' + sr + '" style="animation-duration:' + dur + 's;animation-delay:-' + del + 's"/>';
+  }
+  stars.innerHTML = starHTML;
+
+  var petalHTML = "";
+  for (var j = 0; j < 40; j++) {
+    var px = (Math.random() * 1320 - 20).toFixed(1);
+    var py = (Math.random() * 760 - 40).toFixed(1);
+    var prx = (5 + Math.random() * 3.5).toFixed(1);
+    var pry = (3.4 + Math.random() * 2.2).toFixed(1);
+    var pdur = (6 + Math.random() * 7).toFixed(2);
+    var pdel = (Math.random() * 12).toFixed(2);
+    var sdur = (1.8 + Math.random() * 2.4).toFixed(2);
+    var sdel = (Math.random() * 2).toFixed(2);
+    var spdur = (2 + Math.random() * 3).toFixed(2);
+    var pfill = Math.random() > 0.5 ? "var(--petal)" : "var(--petal-2)";
+    petalHTML += '<g class="petal" style="animation-duration:' + pdur + 's;animation-delay:-' + pdel + 's">' +
+      '<g class="petalsway" style="animation-duration:' + sdur + 's;animation-delay:-' + sdel + 's">' +
+      '<ellipse class="petalspin" style="animation-duration:' + spdur + 's" cx="' + px + '" cy="' + py + '" rx="' + prx + '" ry="' + pry + '" fill="' + pfill + '"/></g></g>';
+  }
+  petals.innerHTML = petalHTML;
+
+  var bflyHTML = "";
+  var bflyColors = ["#ff9ec4", "#ffb86b", "#c4a5ff", "#8fd9ff", "#ffd86b"];
+  for (var m = 0; m < 5; m++) {
+    var by = (300 + Math.random() * 280).toFixed(1);
+    var bdur = (16 + Math.random() * 14).toFixed(2);
+    var bdel = (Math.random() * 20).toFixed(2);
+    var bscale = (0.7 + Math.random() * 0.6).toFixed(2);
+    var bcol = bflyColors[m % bflyColors.length];
+    bflyHTML += '<g class="bfly" style="animation-duration:' + bdur + 's;animation-delay:-' + bdel + 's">' +
+      '<g class="bflybob" transform="translate(0 ' + by + ') scale(' + bscale + ')">' +
+      '<ellipse class="bw" cx="-6" cy="0" rx="7" ry="5" fill="' + bcol + '" opacity="0.9"/>' +
+      '<ellipse class="bw right" cx="6" cy="0" rx="7" ry="5" fill="' + bcol + '" opacity="0.9"/>' +
+      '<ellipse cx="0" cy="0" rx="1.6" ry="4" fill="#4a3a2a"/></g></g>';
+  }
+  butterflies.innerHTML = bflyHTML;
+
+  var flyHTML = "";
+  for (var n = 0; n < 24; n++) {
+    var fy = (280 + Math.random() * 360).toFixed(1);
+    var fr = (1.6 + Math.random() * 2.2).toFixed(2);
+    var fdur = (14 + Math.random() * 12).toFixed(2);
+    var fdel = (Math.random() * 20).toFixed(2);
+    var sdur2 = (2 + Math.random() * 2.6).toFixed(2);
+    var sdel2 = (Math.random() * 2).toFixed(2);
+    flyHTML += '<g class="firefly" style="animation-duration:' + fdur + 's;animation-delay:-' + fdel + 's">' +
+      '<g class="ffsway" style="animation-duration:' + sdur2 + 's;animation-delay:-' + sdel2 + 's">' +
+      '<circle class="ffblink" cx="0" cy="' + fy + '" r="' + fr + '" fill="#ffe9a8" style="animation-duration:' + sdur2 + 's;animation-delay:-' + sdel2 + 's"/></g></g>';
+  }
+  fireflies.innerHTML = flyHTML;
+
+  function solveIK(hx, hy, fx, fy, l1, l2) {
+    var dx = fx - hx, dy = fy - hy;
+    var d = Math.sqrt(dx * dx + dy * dy) || 0.001;
+    var dmax = l1 + l2 - 0.5, dmin = Math.abs(l1 - l2) + 0.5;
+    if (d > dmax) { fx = hx + dx / d * dmax; fy = hy + dy / d * dmax; d = dmax; dx = fx - hx; dy = fy - hy; }
+    if (d < dmin) { fx = hx + dx / d * dmin; fy = hy + dy / d * dmin; d = dmin; dx = fx - hx; dy = fy - hy; }
+    var a = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+    var h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    var ux = dx / d, uy = dy / d;
+    var kx = hx + a * ux, ky = hy + a * uy;
+    var c1x = kx - h * uy, c1y = ky + h * ux;
+    var c2x = kx + h * uy, c2y = ky - h * ux;
+    var knee = (c1x <= c2x) ? { x: c1x, y: c1y } : { x: c2x, y: c2y };
+    return { knee: knee, fx: fx, fy: fy };
+  }
+
+  function drawLeg(pathEl, hip, foot, leg) {
+    var r = solveIK(hip.x, hip.y, foot.x, foot.y, leg.l1, leg.l2);
+    pathEl.setAttribute("d", "M " + hip.x.toFixed(1) + " " + hip.y.toFixed(1) +
+      " L " + r.knee.x.toFixed(1) + " " + r.knee.y.toFixed(1) +
+      " L " + r.fx.toFixed(1) + " " + r.fy.toFixed(1));
+  }
+
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (paused || hidden) { requestAnimationFrame(frame); return; }
+    {
+      t += dt * speeds[speedIdx];
+      wheelDeg += dt * 430 * speeds[speedIdx];
+      crankDeg += dt * 185 * speeds[speedIdx];
+      nextBlink -= dt;
+      if (nextBlink <= 0 && blinkLeft <= 0) { blinkLeft = 0.13; }
+      if (blinkLeft > 0) {
+        blinkLeft -= dt;
+        if (blinkLeft <= 0) { nextBlink = 2.5 + Math.random() * 3.5; }
+      }
+    }
+    eyelid.setAttribute("opacity", blinkLeft > 0 ? 1 : 0);
+
+    var rad = crankDeg * Math.PI / 180;
+    var rigBob = 1.8 * Math.sin(t * 4.4);
+    var bodyBob = 2.4 * Math.sin(t * 4.4 + 0.9);
+    var bodyRot = 2.2 * Math.sin(t * 2.2);
+
+    rig.setAttribute("transform", "translate(0 " + rigBob.toFixed(2) + ")");
+    bodyG.setAttribute("transform", "translate(0 " + bodyBob.toFixed(2) + ") rotate(" + bodyRot.toFixed(2) + " 600 356)");
+    headG.setAttribute("transform", "rotate(" + (2 * Math.sin(t * 2.2 + 0.4)).toFixed(2) + " 696 292)");
+    tailG.setAttribute("transform", "rotate(" + (17 * Math.sin(t * 9)).toFixed(2) + " 516 344)");
+    tailTip.setAttribute("transform", "rotate(" + (9 * Math.sin(t * 9 + 0.6)).toFixed(2) + " -70 -36)");
+    earG.setAttribute("transform", "rotate(" + (11 * Math.sin(t * 7.5)).toFixed(2) + " 728 212)");
+    earFarG.setAttribute("transform", "rotate(" + (9 * Math.sin(t * 7.5 + 1.2)).toFixed(2) + " 700 214)");
+    armG.setAttribute("transform", "rotate(" + (3 * Math.sin(t * 5.6)).toFixed(2) + " 664 352)");
+    armFarG.setAttribute("transform", "rotate(" + (3 * Math.sin(t * 5.6 + 1)).toFixed(2) + " 652 344)");
+    tongueG.setAttribute("transform", "rotate(" + (13 * Math.sin(t * 5.2)).toFixed(2) + " 758 270) scale(1 " + (1 + 0.12 * Math.sin(t * 5.2 + 0.5)).toFixed(3) + ")");
+    shadow.setAttribute("transform", "translate(655 658) translate(0 " + (rigBob * 0.4).toFixed(2) + ") scale(1 " + (1 - 0.035 * Math.sin(t * 4.4)).toFixed(3) + ") translate(-655 -658)");
+
+    wheelRear.setAttribute("transform", "rotate(" + wheelDeg.toFixed(1) + " 545 575)");
+    wheelFront.setAttribute("transform", "rotate(" + wheelDeg.toFixed(1) + " 775 575)");
+    gear.setAttribute("transform", "rotate(" + crankDeg.toFixed(1) + " 640 600)");
+
+    var pa = { x: BB.x + CR * Math.cos(rad), y: BB.y + CR * Math.sin(rad) };
+    var pb = { x: BB.x - CR * Math.cos(rad), y: BB.y - CR * Math.sin(rad) };
+    crankA.setAttribute("x2", pa.x.toFixed(1));
+    crankA.setAttribute("y2", pa.y.toFixed(1));
+    crankB.setAttribute("x2", pb.x.toFixed(1));
+    crankB.setAttribute("y2", pb.y.toFixed(1));
+    pedalA.setAttribute("transform", "translate(" + pa.x.toFixed(1) + " " + pa.y.toFixed(1) + ") rotate(" + (-crankDeg).toFixed(1) + ")");
+    pedalB.setAttribute("transform", "translate(" + pb.x.toFixed(1) + " " + pb.y.toFixed(1) + ") rotate(" + (-crankDeg).toFixed(1) + ")");
+
+    var footNearPos = { x: pa.x + 4, y: pa.y - 6, rot: -crankDeg + 6 * Math.sin(t * 9) };
+    var footFarPos = { x: pb.x + 4, y: pb.y - 6, rot: -crankDeg + 6 * Math.sin(t * 9 + 1.7) };
+    drawLeg(legNear, { x: HIP.near.x, y: HIP.near.y + bodyBob }, footNearPos, LEG.near);
+    drawLeg(legFar, { x: HIP.far.x, y: HIP.far.y }, footFarPos, LEG.far);
+    footNear.setAttribute("transform", "translate(" + footNearPos.x.toFixed(1) + " " + footNearPos.y.toFixed(1) + ") rotate(" + footNearPos.rot.toFixed(1) + ")");
+    footFar.setAttribute("transform", "translate(" + footFarPos.x.toFixed(1) + " " + footFarPos.y.toFixed(1) + ") rotate(" + footFarPos.rot.toFixed(1) + ")");
+
+    var d1 = "M 684 310";
+    for (var k = 1; k <= 5; k++) {
+      var wy = 310 + 10 + Math.sin(t * 8 - k * 0.9) * 6 * (k * 0.18) + k * k * 0.6;
+      d1 += " L " + (684 - k * 22) + " " + wy.toFixed(1);
+    }
+    bandanaTail.setAttribute("d", d1);
+
+    requestAnimationFrame(frame);
+  }
+
+  var btnPause = $("btnPause"), btnSpeed = $("btnSpeed"), btnNight = $("btnNight");
+
+  btnPause.addEventListener("click", function () {
+    paused = !paused;
+    document.body.classList.toggle("paused", paused);
+    btnPause.textContent = paused ? "▶ 播放" : "⏸ 暂停";
+  });
+  btnSpeed.addEventListener("click", function () {
+    speedIdx = (speedIdx + 1) % speeds.length;
+    btnSpeed.textContent = "速度 " + speeds[speedIdx].toFixed(1) + "×";
+  });
+  btnNight.addEventListener("click", function () {
+    document.body.classList.toggle("night");
+    btnNight.textContent = document.body.classList.contains("night") ? "☀️ 白昼" : "🌙 星夜";
+  });
+  document.addEventListener("visibilitychange", function () { hidden = document.hidden; });
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { e.preventDefault(); btnPause.click(); }
+    else if (e.key === "s" || e.key === "S") { btnSpeed.click(); }
+    else if (e.key === "n" || e.key === "N") { btnNight.click(); }
+  });
+
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    paused = true;
+    document.body.classList.add("paused");
+    btnPause.textContent = "▶ 播放";
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

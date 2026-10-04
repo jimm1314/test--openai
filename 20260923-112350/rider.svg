@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 560" fill="none" role="img" aria-label="一只圆滚滚的奶龙开心地骑着珊瑚色自行车">
+  <defs>
+    <linearGradient id="nl-body-fill" x1="240" y1="170" x2="354" y2="409" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE56F"/><stop offset="1" stop-color="#F8C841"/></linearGradient>
+    <linearGradient id="nl-head-fill" x1="278" y1="85" x2="364" y2="248" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE97A"/><stop offset="1" stop-color="#FFD34D"/></linearGradient>
+    <linearGradient id="nl-tail-fill" x1="124" y1="270" x2="227" y2="339" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE16B"/><stop offset="1" stop-color="#F6C339"/></linearGradient>
+    <linearGradient id="nl-muzzle-fill" x1="346" y1="171" x2="377" y2="228" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE782"/><stop offset="1" stop-color="#FFDD67"/></linearGradient>
+  </defs>
+  <!-- Motion is intentionally controlled by the embedding page. -->
+  <g transform="scale(.96875 .9777778)">
+  <!-- A generously proportioned little bicycle. -->
+  <g stroke="#655248" stroke-linecap="round" stroke-linejoin="round">
+    <g fill="#FFFBEF" stroke-width="7">
+      <circle cx="160" cy="450" r="88"/><circle cx="470" cy="450" r="88"/>
+    </g>
+    <g stroke="#B8C8C2" stroke-width="2.5">
+      <circle cx="160" cy="450" r="74"/><circle cx="470" cy="450" r="74"/>
+      <g id="wheel-back" class="nl-wheel-spin nl-back-spokes">
+        <path d="M160 376V524M86 450H234M108 398L212 502M108 502L212 398M132 381L188 519M91 422L229 478M91 478L229 422M132 519L188 381"/>
+        <path d="M212 400L222 412" stroke="#F6B357" stroke-width="6"/>
+      </g>
+      <g id="wheel-front" class="nl-wheel-spin nl-front-spokes">
+        <path d="M470 376V524M396 450H544M418 398L522 502M418 502L522 398M442 381L498 519M401 422L539 478M401 478L539 422M442 519L498 381"/>
+        <path d="M419 401L408 414" stroke="#F6B357" stroke-width="6"/>
+      </g>
+    </g>
+    <path d="M95 388A91 91 0 0 1 227 390M411 385A91 91 0 0 1 539 393" stroke="#655248" stroke-width="12"/>
+    <path d="M95 388A91 91 0 0 1 227 390M411 385A91 91 0 0 1 539 393" stroke="#F8957D" stroke-width="6"/>
+    <path d="M160 450L267 335L300 440L160 450M267 335L420 335L300 440M420 335L470 450M420 335L403 286" stroke-width="15"/>
+    <path d="M160 450L267 335L300 440L160 450M267 335L420 335L300 440M420 335L470 450M420 335L403 286" stroke="#ED8673" stroke-width="9"/>
+    <path d="M276 354L266 320" stroke-width="11"/>
+    <path d="M245 319H289" stroke-width="16"/>
+    <path d="M249 315H286" stroke="#8E6C56" stroke-width="7"/>
+    <path d="M403 285L420 279L444 286" stroke-width="11"/>
+    <path d="M403 285L420 279L444 286" stroke="#D7E1D6" stroke-width="5"/>
+    <path d="M437 283L456 289" stroke="#655248" stroke-width="12"/>
+    <path d="M443 301C448 312 447 326 433 335" stroke-width="2"/>
+    <circle cx="160" cy="450" r="8" fill="#8CAAA0" stroke-width="4"/>
+    <circle cx="470" cy="450" r="8" fill="#8CAAA0" stroke-width="4"/>
+    <circle cx="300" cy="440" r="17" fill="#FFF9E6" stroke-width="4"/>
+    <circle cx="300" cy="440" r="5" fill="#8CAAA0" stroke-width="2"/>
+    <g id="pedal-crank" class="nl-crank" stroke-width="6">
+      <path d="M273 412L327 468"/>
+      <path d="M263 412H283M317 468H337" stroke="#655248" stroke-width="8"/>
+    </g>
+  </g>
+  <!-- Small orange back plates, a curling tail, and a soft pear-shaped body. -->
+  <g id="rider-body" class="nl-rider" stroke="#735337" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M213 307C175 313 145 296 140 273C131 291 136 317 154 331C171 346 196 350 222 340" fill="url(#nl-tail-fill)" stroke-width="5"/>
+    <path d="M143 304L129 310L146 321M166 336L157 349L180 344" fill="#F5A448" stroke-width="4"/>
+    <path d="M214 251L193 263L210 282M205 292L184 307L207 320M222 214L201 224L216 242" fill="#EFA04F" stroke-width="5"/>
+    <path d="M296 360C282 359 256 381 258 405C260 415 280 422 291 413L313 387" fill="#F2BC35" stroke-width="5"/>
+    <path d="M239 400C247 391 263 391 278 400C284 405 280 416 270 416H247C239 416 235 408 239 400Z" fill="#FFD050" stroke-width="5"/>
+    <path d="M254 239C220 242 202 270 208 315C212 349 241 376 287 382C330 389 379 372 390 337C403 296 382 259 351 244C324 232 281 229 254 239Z" fill="url(#nl-body-fill)" stroke-width="5.5"/>
+    <path d="M306 266C277 268 258 300 267 330C275 357 304 371 336 360C365 350 372 317 357 291C346 274 326 266 306 266Z" fill="#FFE896" stroke="none"/>
+    <path d="M222 279C216 295 219 314 225 328" stroke="#FFED98" stroke-width="10"/>
+    <g class="nl-foot">
+      <path d="M344 349C363 356 364 377 348 393L333 421C324 430 309 424 308 414C311 399 310 382 320 369" fill="#FFD353" stroke-width="5"/>
+      <path d="M320 411C330 409 343 413 350 423C358 434 350 442 338 442H314C301 441 297 432 304 422C308 416 314 412 320 411Z" fill="#FFDC63" stroke-width="5"/>
+      <path d="M331 430L333 437M342 429L344 435" stroke="#D49E3F" stroke-width="3"/>
+    </g>
+    <!-- Rear arm peeking around the rounded body. -->
+    <path d="M316 254C334 254 346 270 367 279L418 280C429 280 434 288 428 296C423 305 401 305 377 301C353 297 332 291 319 282" fill="#F4C23B" stroke-width="5"/>
+    <!-- Large, soft head with two tiny nubs. -->
+    <path d="M259 100C251 93 252 82 259 78C268 74 276 80 278 92M302 80C305 64 316 60 323 69L326 82" fill="#EEA64C" stroke-width="5"/>
+    <path d="M295 83C247 81 220 110 221 157C213 170 217 196 231 214C246 241 281 258 328 252C371 252 402 232 408 201C414 165 402 134 384 111C366 89 335 79 295 83Z" fill="url(#nl-head-fill)" stroke-width="5.5"/>
+    <path d="M246 121C255 109 269 102 283 101" stroke="#FFF1A2" stroke-width="11"/>
+    <path d="M234 144L233 151" stroke="#FFF1A2" stroke-width="8"/>
+    <path d="M246 228C262 238 285 244 306 243C315 243 323 241 331 238L326 261C302 268 273 263 251 249Z" fill="#4EB7A2" stroke-width="4.5"/>
+    <path d="M254 242C274 250 297 253 321 248" stroke="#9BE0C6" stroke-width="4"/>
+    <path d="M300 257L307 282L322 265Z" fill="#3A9A8C" stroke-width="4"/>
+    <!-- Rounded muzzle and a little cheek that make the silhouette unmistakable. -->
+    <path d="M348 166C367 162 391 167 409 177C425 185 427 201 416 215C405 230 380 235 352 227C338 223 330 213 330 201" fill="url(#nl-muzzle-fill)" stroke-width="5"/>
+    <ellipse cx="301" cy="187" rx="18" ry="10" fill="#F7AE63" stroke="none" opacity=".63"/>
+    <ellipse cx="404" cy="194" rx="9" ry="6" fill="#F7AE63" stroke="none" opacity=".45"/>
+    <g class="nl-eye" fill="#544634" stroke="none">
+      <ellipse cx="311" cy="157" rx="7" ry="10"/>
+      <ellipse cx="367" cy="153" rx="6.5" ry="9.5"/>
+      <circle cx="313" cy="154" r="2" fill="#FFFCEF"/>
+      <circle cx="369" cy="150" r="1.8" fill="#FFFCEF"/>
+    </g>
+    <path d="M302 137Q310 133 318 136M362 133Q368 130 374 134" stroke="#B68D36" stroke-width="3"/>
+    <path d="M345 197C358 210 385 214 402 200" stroke-width="4"/>
+    <path d="M375 208L380 218L386 207" fill="#FFFDF2" stroke-width="2.5"/>
+    <ellipse cx="391" cy="178" rx="3" ry="2" fill="#BD9441" stroke="none"/>
+    <ellipse cx="406" cy="183" rx="2.5" ry="1.8" fill="#BD9441" stroke="none"/>
+    <!-- A plump little arm reaches naturally for the handlebar. -->
+    <path d="M356 246C374 246 384 259 391 274C398 285 412 287 431 283C444 278 451 285 448 296C445 307 430 314 414 312C386 310 363 294 351 278" fill="#FFD85B" stroke-width="5.5"/>
+    <path d="M367 258C375 261 380 269 383 277" stroke="#FFE992" stroke-width="7"/>
+    <path d="M434 290L437 300M442 288L445 296" stroke="#C89B3D" stroke-width="2.5"/>
+  </g>
+  </g>
+</svg>

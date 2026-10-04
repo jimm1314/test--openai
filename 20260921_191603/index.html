@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>企鹅快线 · Penguin Express</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a1230; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+  }
+  .stage { position: fixed; inset: 0; }
+  #scene { width: 100%; height: 100%; display: block; }
+  #scene stop, #scene rect, #scene path, #scene circle, #scene ellipse, #scene line {
+    transition: fill .7s ease, stop-color .7s ease, stroke .7s ease;
+  }
+  .overlay {
+    position: fixed; top: 22px; left: 26px; color: var(--text); z-index: 5;
+    pointer-events: none; user-select: none;
+  }
+  .overlay h1 { font-size: 26px; letter-spacing: 1px; font-weight: 800; text-shadow: 0 2px 12px rgba(20,40,60,.2); }
+  .overlay p { margin-top: 6px; font-size: 13px; opacity: .75; letter-spacing: .5px; }
+  .controls {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; z-index: 5;
+  }
+  .controls button {
+    border: 1px solid rgba(255,255,255,.4); outline: none; cursor: pointer;
+    background: rgba(14, 38, 58, .42); color: #fff; backdrop-filter: blur(8px);
+    padding: 8px 16px; border-radius: 999px; font-size: 13px; letter-spacing: .5px;
+    transition: transform .15s ease, background .2s ease;
+  }
+  .controls button:hover { background: rgba(14, 38, 58, .62); transform: translateY(-2px); }
+  .hint {
+    position: fixed; right: 22px; bottom: 22px; z-index: 5; color: var(--text);
+    font-size: 12px; opacity: .55; pointer-events: none; user-select: none; letter-spacing: .5px;
+  }
+  :root {
+    --text: #10344a;
+    --sky-1: #a8dcff; --sky-2: #d8f2ff; --sky-3: #fff6e2;
+    --sun-core: #ffe9a8; --sun-ray: #ffd76a;
+    --mtn-1: #d7ecf7; --mtn-2: #b9d9ec; --mtn-line: #8fb9d4;
+    --sea-1: #2f9fc9; --sea-2: #63c2dd;
+    --wave-c: rgba(255,255,255,.6);
+    --ice: #f4fafd; --ice-line: #b9d4e2; --ice-shade: #d8ebf3;
+    --road-1: #f2f9fd; --road-2: #d2e4ee;
+    --dash: #9fcbe8; --edge: #ffffff;
+    --barrier: #e8f3fa; --barrier-line: #a9c9db;
+    --sign: #e2564a; --sign-pole: #7a8b96;
+    --cloud: #ffffff;
+    --skin: #333a44; --skin-2: #232930; --skin-line: #14181d;
+    --belly: #f7fafc; --belly-line: #d9e3ea;
+    --beak: #f5a623; --beak-line: #c47f14;
+    --scarf: #2fb6a8; --scarf-dark: #1d8f84;
+    --frame: #e2564a; --frame-dark: #b23a30;
+    --tire: #2b3238; --rim: #e2edf3; --spoke: #a3b8c4; --hub: #546e7a;
+    --shadow: rgba(30, 60, 90, .22);
+    --basket: #c98f4e; --basket-line: #9c6c33; --fish: #cfe3ee; --fish-line: #7fa9bd;
+    --star-op: 0; --sun-op: 1; --moon-op: 0; --aurora-op: 0;
+    --flake-c: #ffffff;
+  }
+  body.night {
+    --text: #dff1ff;
+    --sky-1: #07102b; --sky-2: #12294d; --sky-3: #2c3f6a;
+    --sun-core: #e9edf5; --sun-ray: #b9c6dd;
+    --mtn-1: #27405f; --mtn-2: #1a3049; --mtn-line: #12233a;
+    --sea-1: #07223a; --sea-2: #0d3a5c;
+    --wave-c: rgba(160,210,255,.35);
+    --ice: #c9dcf0; --ice-line: #6f8aa3; --ice-shade: #9fbcd6;
+    --road-1: #2e3f50; --road-2: #1e2c3a;
+    --dash: #a9cfe8; --edge: #c7d3da;
+    --barrier: #37506a; --barrier-line: #24405c;
+    --sign: #c9453a; --sign-pole: #3d4c58;
+    --cloud: #39507a;
+    --skin: #2c333c; --skin-2: #1d232a; --skin-line: #101418;
+    --belly: #e8eef4; --belly-line: #b6c4cf;
+    --beak: #e0952a; --beak-line: #a86a15;
+    --scarf: #27a396; --scarf-dark: #18786e;
+    --frame: #c9453a; --frame-dark: #992f26;
+    --tire: #1c242c; --rim: #8fa0aa; --spoke: #63737d; --hub: #33454f;
+    --shadow: rgba(0, 0, 0, .5);
+    --basket: #9a6c3c; --basket-line: #6f4c26; --fish: #9fc3d6; --fish-line: #5d89a0;
+    --star-op: 1; --sun-op: 0; --moon-op: 1; --aurora-op: .8;
+    --flake-c: #eaf6ff;
+  }
+  .dashmove { animation: dashmove .55s linear infinite; }
+  @keyframes dashmove { to { transform: translateX(-160px); } }
+  .dashmove2 { animation: dashmove2 .38s linear infinite; }
+  @keyframes dashmove2 { to { transform: translateX(-90px); } }
+  .trackmove { animation: dashmove2 .42s linear infinite; }
+  .barriermove { animation: barriermove .5s linear infinite; }
+  @keyframes barriermove { to { transform: translateX(-80px); } }
+  .signmove { animation: signmove 2.6s linear infinite; }
+  @keyframes signmove { from { transform: translateX(1400px); } to { transform: translateX(-260px); } }
+  .wave1 { animation: wavedrift 7s linear infinite; }
+  .wave2 { animation: wavedrift2 5s linear infinite; }
+  .wave3 { animation: wavedrift3 9s linear infinite; }
+  @keyframes wavedrift { to { transform: translateX(-240px); } }
+  @keyframes wavedrift2 { to { transform: translateX(-160px); } }
+  @keyframes wavedrift3 { to { transform: translateX(-200px); } }
+  .mound { animation: moundmove .6s linear infinite; }
+  @keyframes moundmove { to { transform: translateX(-300px); } }
+  .rays { animation: spin 50s linear infinite; transform-origin: 1050px 120px; transform-box: view-box; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #sunGroup { opacity: var(--sun-op); transition: opacity 1s ease; }
+  #moonGroup { opacity: var(--moon-op); transition: opacity 1s ease; }
+  .stars { opacity: var(--star-op); transition: opacity 1s ease; }
+  .star { fill: #fff; animation: twinkle 3.2s ease-in-out infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+  .aurora { opacity: var(--aurora-op); transition: opacity 1.4s ease; }
+  .aurora-a { animation: auroradrift 11s ease-in-out infinite alternate; }
+  .aurora-b { animation: auroradrift2 14s ease-in-out infinite alternate; }
+  @keyframes auroradrift { from { transform: translateX(-60px); } to { transform: translateX(60px); } }
+  @keyframes auroradrift2 { from { transform: translateX(40px); } to { transform: translateX(-70px); } }
+  .clouda { animation: clouddrift 46s linear infinite; }
+  .cloudb { animation: clouddrift 64s linear infinite; animation-delay: -22s; }
+  .cloudc { animation: clouddrift 80s linear infinite; animation-delay: -50s; }
+  .cloudd { animation: clouddrift 38s linear infinite; animation-delay: -8s; }
+  @keyframes clouddrift { from { transform: translateX(1420px); } to { transform: translateX(-420px); } }
+  .birda { animation: birdfly 30s linear infinite; }
+  .birdb { animation: birdfly 44s linear infinite; animation-delay: -18s; }
+  @keyframes birdfly { from { transform: translateX(1420px); } to { transform: translateX(-300px); } }
+  .floea { animation: floemove 40s linear infinite; }
+  .floeb { animation: floemove 55s linear infinite; animation-delay: -25s; }
+  .floec { animation: floemove 34s linear infinite; animation-delay: -12s; }
+  @keyframes floemove { from { transform: translateX(1450px); } to { transform: translateX(-320px); } }
+  .floebob { animation: boatbob 3.6s ease-in-out infinite; }
+  @keyframes boatbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+  .penguina { animation: penguinwave 5s ease-in-out infinite; transform-origin: 0 0; }
+  .penguinb { animation: penguinwave 5s ease-in-out infinite; animation-delay: -2.5s; transform-origin: 0 0; }
+  @keyframes penguinwave {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-6px) rotate(-4deg); }
+    60% { transform: translateY(0) rotate(0deg); }
+  }
+  .flake { animation: snowfall linear infinite; }
+  .sway { animation: sway ease-in-out infinite alternate; }
+  @keyframes snowfall { from { transform: translateY(-40px); } to { transform: translateY(760px); } }
+  @keyframes sway { from { transform: translateX(-22px); } to { transform: translateX(22px); } }
+  .speedline { animation: speedline .55s linear infinite; opacity: 0; }
+  .speedline.s2 { animation-duration: .7s; animation-delay: -0.2s; }
+  .speedline.s3 { animation-duration: .48s; animation-delay: -0.35s; }
+  .speedline.s4 { animation-duration: .62s; animation-delay: -0.1s; }
+  .speedline.s5 { animation-duration: .52s; animation-delay: -0.42s; }
+  @keyframes speedline {
+    0% { transform: translateX(0); opacity: 0; }
+    12% { opacity: .8; }
+    85% { opacity: .5; }
+    100% { transform: translateX(-900px); opacity: 0; }
+  }
+  .puff { animation: puff 3.2s ease-out infinite; opacity: 0; }
+  .puff.p2 { animation-delay: 1.6s; }
+  @keyframes puff {
+    0% { transform: translate(0,0) scale(.4); opacity: 0; }
+    18% { opacity: .85; }
+    100% { transform: translate(70px,-46px) scale(1.9); opacity: 0; }
+  }
+  #rig, #bodyG, #headG, #wheelRear, #wheelFront { will-change: transform; }
+  .paused .dashmove, .paused .dashmove2, .paused .trackmove, .paused .barriermove,
+  .paused .mound, .paused .wave1, .paused .wave2, .paused .wave3, .paused .speedline,
+  .paused .clouda, .paused .cloudb, .paused .cloudc, .paused .cloudd,
+  .paused .birda, .paused .birdb, .paused .flake, .paused .sway,
+  .paused .floea, .paused .floeb, .paused .floec, .paused .rays,
+  .paused .penguina, .paused .penguinb, .paused .signmove, .paused .puff,
+  .paused .aurora-a, .paused .aurora-b { animation-play-state: paused; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <svg id="scene" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="一只企鹅在南极冰路上骑自行车的动画">
+    <defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="sky-s1" />
+        <stop offset="0.58" class="sky-s2" />
+        <stop offset="1" class="sky-s3" />
+      </linearGradient>
+      <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" class="glow-s1" />
+        <stop offset="1" class="glow-s2" />
+      </radialGradient>
+      <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="sea-s1" />
+        <stop offset="1" class="sea-s2" />
+      </linearGradient>
+      <linearGradient id="roadGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="road-s1" />
+        <stop offset="1" class="road-s2" />
+      </linearGradient>
+      <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" class="body-s1" />
+        <stop offset="1" class="body-s2" />
+      </linearGradient>
+      <linearGradient id="auroraGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3ef0a8" stop-opacity="0" />
+        <stop offset="0.35" stop-color="#4de0b0" />
+        <stop offset="0.7" stop-color="#7a6ff0" />
+        <stop offset="1" stop-color="#7a6ff0" stop-opacity="0" />
+      </linearGradient>
+      <style>
+        .sky-s1 { stop-color: var(--sky-1); }
+        .sky-s2 { stop-color: var(--sky-2); }
+        .sky-s3 { stop-color: var(--sky-3); }
+        .glow-s1 { stop-color: var(--sun-core); stop-opacity: .55; }
+        .glow-s2 { stop-color: var(--sun-core); stop-opacity: 0; }
+        .sea-s1 { stop-color: var(--sea-1); }
+        .sea-s2 { stop-color: var(--sea-2); }
+        .road-s1 { stop-color: var(--road-1); }
+        .road-s2 { stop-color: var(--road-2); }
+        .body-s1 { stop-color: var(--skin); }
+        .body-s2 { stop-color: var(--skin-2); }
+      </style>
+    </defs>
+
+    <rect x="0" y="0" width="1280" height="470" fill="url(#skyGrad)" />
+    <g class="stars" id="stars"></g>
+    <g class="aurora aurora-a">
+      <path d="M -100 90 Q 220 20 460 96 Q 700 170 980 84 Q 1160 36 1380 96 L 1380 190 Q 1160 130 980 178 Q 700 264 460 190 Q 220 116 -100 186 Z" fill="url(#auroraGrad)" opacity="0.5" />
+    </g>
+    <g class="aurora aurora-b">
+      <path d="M -100 150 Q 260 92 520 156 Q 780 220 1040 150 Q 1200 110 1380 150 L 1380 236 Q 1200 196 1040 236 Q 780 306 520 242 Q 260 178 -100 236 Z" fill="url(#auroraGrad)" opacity="0.35" />
+    </g>
+    <g id="sunGroup">
+      <circle cx="1050" cy="120" r="130" fill="url(#sunGlow)" />
+      <g class="rays">
+        <g stroke="var(--sun-ray)" stroke-width="6" stroke-linecap="round">
+          <line x1="1050" y1="30" x2="1050" y2="6" />
+          <line x1="1050" y1="210" x2="1050" y2="234" />
+          <line x1="960" y1="120" x2="936" y2="120" />
+          <line x1="1140" y1="120" x2="1164" y2="120" />
+          <line x1="984" y1="54" x2="966" y2="36" />
+          <line x1="1116" y1="186" x2="1134" y2="204" />
+          <line x1="1116" y1="54" x2="1134" y2="36" />
+          <line x1="984" y1="186" x2="966" y2="204" />
+        </g>
+      </g>
+      <circle cx="1050" cy="120" r="54" fill="var(--sun-core)" />
+    </g>
+    <g id="moonGroup">
+      <circle cx="1050" cy="120" r="56" fill="#e9edf5" />
+      <circle cx="1032" cy="104" r="10" fill="#ccd5e2" />
+      <circle cx="1066" cy="136" r="7" fill="#ccd5e2" />
+      <circle cx="1058" cy="98" r="5" fill="#ccd5e2" />
+    </g>
+
+    <g class="clouda" opacity="0.95">
+      <g fill="var(--cloud)">
+        <ellipse cx="180" cy="110" rx="58" ry="26" />
+        <ellipse cx="230" cy="96" rx="44" ry="24" />
+        <ellipse cx="138" cy="122" rx="40" ry="18" />
+      </g>
+    </g>
+    <g class="cloudb" opacity="0.9">
+      <g fill="var(--cloud)">
+        <ellipse cx="620" cy="70" rx="48" ry="20" />
+        <ellipse cx="662" cy="60" rx="36" ry="18" />
+        <ellipse cx="586" cy="80" rx="34" ry="15" />
+      </g>
+    </g>
+    <g class="cloudc" opacity="0.8">
+      <g fill="var(--cloud)">
+        <ellipse cx="980" cy="180" rx="66" ry="24" />
+        <ellipse cx="1032" cy="166" rx="44" ry="20" />
+        <ellipse cx="934" cy="190" rx="40" ry="16" />
+      </g>
+    </g>
+    <g class="cloudd" opacity="0.85">
+      <g fill="var(--cloud)">
+        <ellipse cx="420" cy="230" rx="44" ry="17" />
+        <ellipse cx="456" cy="222" rx="30" ry="15" />
+      </g>
+    </g>
+
+    <g class="birda" stroke="var(--skin-line)" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <path d="M 240 150 q 7 -9 14 0 q 7 -9 14 0" />
+      <path d="M 300 128 q 5 -7 10 0 q 5 -7 10 0" />
+    </g>
+    <g class="birdb" stroke="var(--skin-line)" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M 520 96 q 6 -8 12 0 q 6 -8 12 0" />
+    </g>
+
+    <path d="M -20 470 L 140 330 L 300 470 Z" fill="var(--mtn-2)" />
+    <path d="M 140 330 L 190 392 L 168 400 L 210 452 L 140 470 L 100 430 L 70 452 L 100 396 Z" fill="var(--mtn-1)" />
+    <path d="M 140 330 L 190 392 L 168 400 L 210 452 L 140 470 Z" fill="var(--mtn-1)" opacity="0.6" />
+    <path d="M 240 470 L 430 300 L 620 470 Z" fill="var(--mtn-2)" />
+    <path d="M 430 300 L 486 366 L 462 374 L 510 430 L 430 470 L 380 424 L 348 448 L 380 372 Z" fill="var(--mtn-1)" />
+    <path d="M 560 470 L 760 336 L 960 470 Z" fill="var(--mtn-2)" opacity="0.9" />
+    <path d="M 760 336 L 806 392 L 784 400 L 826 448 L 760 470 L 718 430 L 690 450 L 716 396 Z" fill="var(--mtn-1)" opacity="0.85" />
+    <path d="M 900 470 L 1090 318 L 1300 470 Z" fill="var(--mtn-2)" opacity="0.8" />
+    <path d="M 1090 318 L 1132 378 L 1110 386 L 1150 434 L 1090 470 L 1050 432 L 1024 450 L 1046 382 Z" fill="var(--mtn-1)" opacity="0.8" />
+
+    <rect x="0" y="452" width="1280" height="172" fill="url(#seaGrad)" />
+    <path class="wave3" d="M -200 600 q 50 -6 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0 t 100 0" fill="none" stroke="var(--wave-c)" stroke-width="3" />
+    <path class="wave2" d="M -160 556 q 40 -8 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0" fill="none" stroke="var(--wave-c)" stroke-width="3" />
+    <path class="wave1" d="M -240 508 q 60 -12 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0 t 120 0" fill="none" stroke="var(--wave-c)" stroke-width="3" />
+
+    <g class="floea">
+      <g class="floebob" transform="translate(300 500)">
+        <path d="M -46 0 Q -30 -16 0 -18 Q 34 -20 48 -2 Q 30 14 -4 14 Q -32 14 -46 0 Z" fill="var(--ice)" stroke="var(--ice-line)" stroke-width="2" />
+        <path d="M -20 -8 Q -6 -16 10 -14" fill="none" stroke="var(--ice-shade)" stroke-width="3" stroke-linecap="round" />
+      </g>
+    </g>
+    <g class="floeb">
+      <g class="floebob" style="animation-delay:-1.8s" transform="translate(900 540)">
+        <path d="M -34 0 Q -22 -12 2 -13 Q 26 -14 36 -1 Q 22 10 -2 10 Q -24 10 -34 0 Z" fill="var(--ice)" stroke="var(--ice-line)" stroke-width="2" />
+      </g>
+    </g>
+    <g class="floec">
+      <g class="floebob" style="animation-delay:-0.9s" transform="translate(1180 490)">
+        <path d="M -26 0 Q -16 -10 4 -11 Q 22 -12 30 -1 Q 18 8 -2 8 Q -18 8 -26 0 Z" fill="var(--ice)" stroke="var(--ice-line)" stroke-width="2" />
+      </g>
+    </g>
+
+    <g class="penguina" transform="translate(190 610)">
+      <ellipse cx="0" cy="-16" rx="15" ry="19" fill="var(--skin)" />
+      <ellipse cx="0" cy="-12" rx="9" ry="13" fill="var(--belly)" />
+      <circle cx="0" cy="-34" r="11" fill="var(--skin)" />
+      <path d="M -4 -35 L 6 -32 L -4 -29 Z" fill="var(--beak)" />
+      <circle cx="-4" cy="-37" r="1.8" fill="#fff" />
+      <circle cx="4" cy="-37" r="1.8" fill="#fff" />
+      <path d="M 10 -30 q 8 -8 2 -16" fill="none" stroke="var(--skin)" stroke-width="5" stroke-linecap="round" />
+      <path d="M -8 0 L -8 6 M 8 0 L 8 6" stroke="var(--beak)" stroke-width="4" stroke-linecap="round" />
+    </g>
+    <g class="penguinb" transform="translate(1090 606)">
+      <ellipse cx="0" cy="-13" rx="12" ry="15" fill="var(--skin)" />
+      <ellipse cx="0" cy="-10" rx="7" ry="10" fill="var(--belly)" />
+      <circle cx="0" cy="-27" r="9" fill="var(--skin)" />
+      <path d="M -3 -28 L 5 -25.5 L -3 -23 Z" fill="var(--beak)" />
+      <circle cx="-3" cy="-30" r="1.5" fill="#fff" />
+      <circle cx="3" cy="-30" r="1.5" fill="#fff" />
+      <path d="M -8 -20 q -7 -7 -2 -13" fill="none" stroke="var(--skin)" stroke-width="4" stroke-linecap="round" />
+      <path d="M -6 0 L -6 5 M 6 0 L 6 5" stroke="var(--beak)" stroke-width="3.5" stroke-linecap="round" />
+    </g>
+
+    <path d="M 0 470 H 1280 V 656 H 0 Z" fill="var(--ice)" />
+    <path d="M 0 470 H 1280 V 484 H 0 Z" fill="var(--ice-shade)" />
+    <g class="barriermove">
+      <g fill="var(--barrier)" stroke="var(--barrier-line)" stroke-width="2">
+        <rect x="-80" y="586" width="7" height="34" rx="2" />
+        <rect x="0" y="586" width="7" height="34" rx="2" />
+        <rect x="80" y="586" width="7" height="34" rx="2" />
+        <rect x="160" y="586" width="7" height="34" rx="2" />
+        <rect x="240" y="586" width="7" height="34" rx="2" />
+        <rect x="320" y="586" width="7" height="34" rx="2" />
+        <rect x="400" y="586" width="7" height="34" rx="2" />
+        <rect x="480" y="586" width="7" height="34" rx="2" />
+        <rect x="560" y="586" width="7" height="34" rx="2" />
+        <rect x="640" y="586" width="7" height="34" rx="2" />
+        <rect x="720" y="586" width="7" height="34" rx="2" />
+        <rect x="800" y="586" width="7" height="34" rx="2" />
+        <rect x="880" y="586" width="7" height="34" rx="2" />
+        <rect x="960" y="586" width="7" height="34" rx="2" />
+        <rect x="1040" y="586" width="7" height="34" rx="2" />
+        <rect x="1120" y="586" width="7" height="34" rx="2" />
+        <rect x="1200" y="586" width="7" height="34" rx="2" />
+        <rect x="1280" y="586" width="7" height="34" rx="2" />
+        <rect x="1360" y="586" width="7" height="34" rx="2" />
+      </g>
+      <rect x="-80" y="580" width="1520" height="7" rx="3" fill="var(--barrier)" stroke="var(--barrier-line)" stroke-width="2" />
+    </g>
+
+    <rect x="0" y="652" width="1280" height="68" fill="url(#roadGrad)" />
+    <rect x="0" y="653" width="1280" height="4" fill="var(--edge)" opacity="0.8" />
+    <g class="dashmove" fill="var(--dash)">
+      <rect x="-160" y="676" width="72" height="9" rx="4" />
+      <rect x="0" y="676" width="72" height="9" rx="4" />
+      <rect x="160" y="676" width="72" height="9" rx="4" />
+      <rect x="320" y="676" width="72" height="9" rx="4" />
+      <rect x="480" y="676" width="72" height="9" rx="4" />
+      <rect x="640" y="676" width="72" height="9" rx="4" />
+      <rect x="800" y="676" width="72" height="9" rx="4" />
+      <rect x="960" y="676" width="72" height="9" rx="4" />
+      <rect x="1120" y="676" width="72" height="9" rx="4" />
+      <rect x="1280" y="676" width="72" height="9" rx="4" />
+      <rect x="1440" y="676" width="72" height="9" rx="4" />
+    </g>
+    <g class="trackmove" stroke="var(--ice-line)" stroke-width="5" stroke-linecap="round" opacity="0.8">
+      <line x1="-90" y1="700" x2="-40" y2="700" />
+      <line x1="0" y1="700" x2="50" y2="700" />
+      <line x1="90" y1="700" x2="140" y2="700" />
+      <line x1="180" y1="700" x2="230" y2="700" />
+      <line x1="270" y1="700" x2="320" y2="700" />
+      <line x1="360" y1="700" x2="410" y2="700" />
+      <line x1="450" y1="700" x2="500" y2="700" />
+      <line x1="540" y1="700" x2="590" y2="700" />
+      <line x1="630" y1="700" x2="680" y2="700" />
+      <line x1="720" y1="700" x2="770" y2="700" />
+      <line x1="810" y1="700" x2="860" y2="700" />
+      <line x1="900" y1="700" x2="950" y2="700" />
+      <line x1="990" y1="700" x2="1040" y2="700" />
+      <line x1="1080" y1="700" x2="1130" y2="700" />
+      <line x1="1170" y1="700" x2="1220" y2="700" />
+      <line x1="1260" y1="700" x2="1310" y2="700" />
+      <line x1="1350" y1="700" x2="1400" y2="700" />
+    </g>
+
+    <ellipse id="shadow" cx="655" cy="666" rx="200" ry="12" fill="var(--shadow)" />
+
+    <g class="speedline" stroke="var(--edge)" stroke-width="5" stroke-linecap="round">
+      <line x1="980" y1="470" x2="1180" y2="470" />
+    </g>
+    <g class="speedline s2" stroke="var(--edge)" stroke-width="4" stroke-linecap="round">
+      <line x1="1000" y1="520" x2="1150" y2="520" />
+    </g>
+    <g class="speedline s3" stroke="var(--edge)" stroke-width="6" stroke-linecap="round">
+      <line x1="960" y1="628" x2="1210" y2="628" />
+    </g>
+    <g class="speedline s4" stroke="var(--edge)" stroke-width="4" stroke-linecap="round">
+      <line x1="1020" y1="660" x2="1160" y2="660" />
+    </g>
+    <g class="speedline s5" stroke="var(--edge)" stroke-width="5" stroke-linecap="round">
+      <line x1="990" y1="706" x2="1200" y2="706" />
+    </g>
+
+    <g class="signmove" transform="translate(0 0)">
+      <rect x="0" y="560" width="7" height="96" fill="var(--sign-pole)" />
+      <g transform="translate(3.5 560)">
+        <rect x="-46" y="-58" width="92" height="58" rx="10" fill="var(--sign)" stroke="#ffffff" stroke-width="3" />
+        <g stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+          <line x1="-20" y1="-46" x2="20" y2="-46" />
+          <line x1="-20" y1="-38" x2="20" y2="-38" />
+          <line x1="0" y1="-50" x2="0" y2="-34" />
+          <line x1="-13" y1="-21" x2="13" y2="-21" />
+          <line x1="-13" y1="-13" x2="13" y2="-13" />
+          <line x1="-13" y1="-29" x2="13" y2="-29" />
+        </g>
+      </g>
+    </g>
+
+    <g id="rig">
+      <g id="wheelRear">
+        <circle cx="545" cy="585" r="78" fill="none" stroke="var(--tire)" stroke-width="13" />
+        <circle cx="545" cy="585" r="68" fill="none" stroke="var(--rim)" stroke-width="5" />
+        <g stroke="var(--spoke)" stroke-width="3">
+          <line x1="545" y1="519" x2="545" y2="651" />
+          <line x1="479" y1="585" x2="611" y2="585" />
+          <line x1="498" y1="538" x2="592" y2="632" />
+          <line x1="592" y1="538" x2="498" y2="632" />
+          <line x1="515" y1="555" x2="575" y2="615" />
+          <line x1="575" y1="555" x2="515" y2="615" />
+          <line x1="515" y1="615" x2="575" y2="555" />
+          <line x1="575" y1="615" x2="515" y2="555" />
+        </g>
+        <rect x="542" y="519" width="6" height="14" rx="3" fill="var(--scarf)" />
+        <circle cx="545" cy="585" r="9" fill="var(--hub)" />
+      </g>
+      <path d="M 502 508 A 78 78 0 0 1 588 508" fill="none" stroke="var(--scarf)" stroke-width="7" stroke-linecap="round" />
+
+      <g id="wheelFront">
+        <circle cx="775" cy="585" r="78" fill="none" stroke="var(--tire)" stroke-width="13" />
+        <circle cx="775" cy="585" r="68" fill="none" stroke="var(--rim)" stroke-width="5" />
+        <g stroke="var(--spoke)" stroke-width="3">
+          <line x1="775" y1="519" x2="775" y2="651" />
+          <line x1="709" y1="585" x2="841" y2="585" />
+          <line x1="728" y1="538" x2="822" y2="632" />
+          <line x1="822" y1="538" x2="728" y2="632" />
+          <line x1="745" y1="555" x2="805" y2="615" />
+          <line x1="805" y1="555" x2="745" y2="615" />
+          <line x1="745" y1="615" x2="805" y2="555" />
+          <line x1="805" y1="615" x2="745" y2="555" />
+        </g>
+        <rect x="772" y="519" width="6" height="14" rx="3" fill="var(--scarf)" />
+        <circle cx="775" cy="585" r="9" fill="var(--hub)" />
+      </g>
+      <path d="M 744 508 A 78 78 0 0 1 806 508" fill="none" stroke="var(--scarf)" stroke-width="7" stroke-linecap="round" />
+
+      <g stroke="var(--frame)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <line x1="545" y1="585" x2="640" y2="610" />
+        <line x1="640" y1="610" x2="602" y2="462" />
+        <line x1="602" y1="462" x2="752" y2="438" />
+        <line x1="640" y1="610" x2="762" y2="490" />
+        <line x1="762" y1="490" x2="752" y2="438" />
+        <line x1="762" y1="490" x2="775" y2="585" stroke-width="9" />
+        <line x1="752" y1="438" x2="766" y2="414" stroke-width="9" />
+        <path d="M 766 414 L 742 408" stroke-width="9" />
+      </g>
+      <path d="M 586 440 L 628 434 L 632 448 L 590 454 Z" fill="var(--skin-2)" />
+
+      <line x1="545" y1="578" x2="640" y2="603" stroke="var(--frame-dark)" stroke-width="4" />
+      <line x1="545" y1="592" x2="640" y2="617" stroke="var(--frame-dark)" stroke-width="4" />
+      <circle cx="545" cy="585" r="11" fill="none" stroke="var(--frame-dark)" stroke-width="4" />
+
+      <g id="gear">
+        <circle cx="640" cy="610" r="21" fill="none" stroke="var(--frame-dark)" stroke-width="9" stroke-dasharray="7 6" />
+      </g>
+      <line id="crankA" x1="640" y1="610" x2="666" y2="610" stroke="var(--skin-2)" stroke-width="9" stroke-linecap="round" />
+      <line id="crankB" x1="640" y1="610" x2="614" y2="610" stroke="var(--skin-2)" stroke-width="9" stroke-linecap="round" />
+      <g id="pedalA" fill="var(--skin-2)">
+        <rect x="-14" y="-4" width="28" height="9" rx="4" />
+      </g>
+      <g id="pedalB" fill="var(--skin-2)">
+        <rect x="-14" y="-4" width="28" height="9" rx="4" />
+      </g>
+
+      <path id="legFar" d="" fill="none" stroke="var(--beak)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" />
+      <g id="footFar" fill="var(--beak)" stroke="var(--beak-line)" stroke-width="2" opacity="0.8">
+        <path d="M 0 0 L 36 -7 L 45 3 L 36 11 L 0 9 Z" />
+      </g>
+
+      <g id="bodyG">
+        <g id="flipperFarG">
+          <path d="M 596 384 Q 562 404 548 436" fill="none" stroke="var(--skin-2)" stroke-width="18" stroke-linecap="round" />
+        </g>
+        <g id="tailG">
+          <path d="M 0 0 L -30 4 L -26 18 L -4 12 Z" fill="var(--skin-2)" />
+        </g>
+        <ellipse cx="598" cy="378" rx="84" ry="60" fill="url(#bodyGrad)" stroke="var(--skin-line)" stroke-width="2.5" transform="rotate(-8 598 378)" />
+        <ellipse cx="606" cy="398" rx="58" ry="44" fill="var(--belly)" stroke="var(--belly-line)" stroke-width="2" />
+        <g id="flipperG">
+          <path d="M 636 372 Q 692 388 740 398" fill="none" stroke="var(--skin-2)" stroke-width="20" stroke-linecap="round" />
+        </g>
+        <path d="M 662 352 C 686 340 696 330 706 318" fill="none" stroke="var(--skin-2)" stroke-width="26" stroke-linecap="round" />
+        <ellipse cx="668" cy="356" rx="21" ry="9" fill="var(--scarf-dark)" transform="rotate(-42 668 356)" />
+        <ellipse cx="668" cy="353" rx="21" ry="9" fill="var(--scarf)" transform="rotate(-42 668 353)" />
+        <path id="scarf" d="" fill="none" stroke="var(--scarf)" stroke-width="11" stroke-linecap="round" />
+        <path id="scarf2" d="" fill="none" stroke="var(--scarf-dark)" stroke-width="7" stroke-linecap="round" opacity="0.85" />
+        <g id="headG">
+          <circle cx="706" cy="316" r="46" fill="url(#bodyGrad)" stroke="var(--skin-line)" stroke-width="2.5" />
+          <ellipse cx="716" cy="326" rx="27" ry="32" fill="var(--belly)" stroke="var(--belly-line)" stroke-width="2" />
+          <path d="M 742 316 L 792 330 Q 797 336 792 342 L 742 338 Z" fill="var(--beak)" stroke="var(--beak-line)" stroke-width="2.5" stroke-linejoin="round" />
+          <path d="M 744 336 L 790 340" stroke="var(--beak-line)" stroke-width="2" stroke-linecap="round" />
+          <ellipse cx="708" cy="303" rx="7" ry="8" fill="#ffffff" stroke="var(--skin-line)" stroke-width="1.5" />
+          <circle cx="710" cy="304" r="3.8" fill="#141a20" />
+          <circle cx="711.6" cy="302" r="1.4" fill="#ffffff" />
+          <ellipse cx="694" cy="322" rx="6" ry="4" fill="#f6a8a0" opacity="0.55" />
+          <rect id="eyelid" x="699" y="293" width="19" height="18" rx="8" fill="var(--skin)" opacity="0" />
+          <g id="hatG">
+            <path d="M 660 296 Q 706 240 752 296 Z" fill="var(--frame)" stroke="var(--frame-dark)" stroke-width="2.5" stroke-linejoin="round" />
+            <rect x="654" y="294" width="104" height="13" rx="6.5" fill="var(--frame-dark)" />
+            <circle cx="706" cy="244" r="13" fill="#fff7ec" stroke="var(--belly-line)" stroke-width="2" />
+          </g>
+        </g>
+        <g class="puff" fill="#ffffff">
+          <circle cx="800" cy="338" r="7" />
+        </g>
+        <g class="puff p2" fill="#ffffff">
+          <circle cx="800" cy="338" r="5" />
+        </g>
+      </g>
+
+      <path id="legNear" d="" fill="none" stroke="var(--beak)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
+      <g id="footNear" fill="var(--beak)" stroke="var(--beak-line)" stroke-width="2">
+        <path d="M 0 0 L 36 -7 L 45 3 L 36 11 L 0 9 Z" />
+      </g>
+
+      <g transform="translate(766 452)">
+        <path d="M 0 0 L 80 0 L 72 46 L 8 46 Z" fill="var(--basket)" stroke="var(--basket-line)" stroke-width="2.5" stroke-linejoin="round" />
+        <g stroke="var(--basket-line)" stroke-width="2" opacity="0.7">
+          <line x1="2" y1="15" x2="78" y2="15" />
+          <line x1="4" y1="31" x2="76" y2="31" />
+          <line x1="28" y1="0" x2="28" y2="46" />
+          <line x1="52" y1="0" x2="52" y2="46" />
+        </g>
+        <g transform="translate(20 4) rotate(-14)">
+          <ellipse cx="0" cy="0" rx="13" ry="6.5" fill="var(--fish)" stroke="var(--fish-line)" stroke-width="2" />
+          <path d="M 12 0 L 24 -7 L 24 7 Z" fill="var(--fish)" stroke="var(--fish-line)" stroke-width="2" stroke-linejoin="round" />
+        </g>
+        <g transform="translate(48 8) rotate(10)">
+          <ellipse cx="0" cy="0" rx="11" ry="5.5" fill="var(--fish)" stroke="var(--fish-line)" stroke-width="2" />
+          <path d="M 10 0 L 21 -6 L 21 6 Z" fill="var(--fish)" stroke="var(--fish-line)" stroke-width="2" stroke-linejoin="round" />
+        </g>
+      </g>
+    </g>
+
+    <g id="snowfall"></g>
+  </svg>
+</div>
+
+<div class="overlay">
+  <h1>企鹅快线</h1>
+  <p>Penguin Express · 南极冰路骑行中</p>
+</div>
+<div class="controls">
+  <button id="btnPause">⏸ 暂停</button>
+  <button id="btnSpeed">速度 1.0×</button>
+  <button id="btnNight">🌙 极夜</button>
+</div>
+<div class="hint">空格 暂停 · S 变速 · N 昼夜</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var rig = $("rig"), bodyG = $("bodyG"), headG = $("headG"), hatG = $("hatG");
+  var flipperG = $("flipperG"), flipperFarG = $("flipperFarG"), tailG = $("tailG");
+  var wheelRear = $("wheelRear"), wheelFront = $("wheelFront"), gear = $("gear");
+  var crankA = $("crankA"), crankB = $("crankB"), pedalA = $("pedalA"), pedalB = $("pedalB");
+  var legFar = $("legFar"), legNear = $("legNear"), footFar = $("footFar"), footNear = $("footNear");
+  var scarf = $("scarf"), scarf2 = $("scarf2"), eyelid = $("eyelid"), shadow = $("shadow");
+  var stars = $("stars"), snowfall = $("snowfall");
+
+  var BB = { x: 640, y: 610 }, CR = 26;
+  var HIP = { near: { x: 620, y: 428 }, far: { x: 592, y: 418 } };
+  var LEG = { near: { l1: 95, l2: 120 }, far: { l1: 100, l2: 125 } };
+
+  var speeds = [0.5, 1, 1.6], speedIdx = 1;
+  var paused = false, t = 0, last = performance.now();
+  var wheelDeg = 0, crankDeg = 0;
+  var nextBlink = 2 + Math.random() * 3, blinkLeft = 0;
+  var hidden = false;
+
+  var starHTML = "";
+  for (var i = 0; i < 70; i++) {
+    var sx = (Math.random() * 1280).toFixed(1);
+    var sy = (Math.random() * 430).toFixed(1);
+    var sr = (0.6 + Math.random() * 1.4).toFixed(2);
+    var dur = (2.2 + Math.random() * 3).toFixed(2);
+    var del = (Math.random() * 3).toFixed(2);
+    starHTML += '<circle class="star" cx="' + sx + '" cy="' + sy + '" r="' + sr + '" style="animation-duration:' + dur + 's;animation-delay:-' + del + 's"/>';
+  }
+  stars.innerHTML = starHTML;
+
+  var snowHTML = "";
+  for (var j = 0; j < 64; j++) {
+    var fx = (Math.random() * 1320 - 20).toFixed(1);
+    var fr = (1.4 + Math.random() * 2.8).toFixed(2);
+    var fdur = (5 + Math.random() * 8).toFixed(2);
+    var fdel = (Math.random() * 12).toFixed(2);
+    var sdur = (1.6 + Math.random() * 2.4).toFixed(2);
+    var sdel = (Math.random() * 2).toFixed(2);
+    var fop = (0.45 + Math.random() * 0.5).toFixed(2);
+    snowHTML += '<g class="flake" style="animation-duration:' + fdur + 's;animation-delay:-' + fdel + 's">' +
+      '<g class="sway" style="animation-duration:' + sdur + 's;animation-delay:-' + sdel + 's">' +
+      '<circle cx="' + fx + '" cy="0" r="' + fr + '" fill="var(--flake-c)" opacity="' + fop + '"/></g></g>';
+  }
+  snowfall.innerHTML = snowHTML;
+
+  function solveIK(hx, hy, fx, fy, l1, l2) {
+    var dx = fx - hx, dy = fy - hy;
+    var d = Math.sqrt(dx * dx + dy * dy) || 0.001;
+    var dmax = l1 + l2 - 0.5, dmin = Math.abs(l1 - l2) + 0.5;
+    if (d > dmax) { fx = hx + dx / d * dmax; fy = hy + dy / d * dmax; d = dmax; dx = fx - hx; dy = fy - hy; }
+    if (d < dmin) { fx = hx + dx / d * dmin; fy = hy + dy / d * dmin; d = dmin; dx = fx - hx; dy = fy - hy; }
+    var a = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+    var h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    var ux = dx / d, uy = dy / d;
+    var kx = hx + a * ux, ky = hy + a * uy;
+    var c1x = kx - h * uy, c1y = ky + h * ux;
+    var c2x = kx + h * uy, c2y = ky - h * ux;
+    var knee = (c1x <= c2x) ? { x: c1x, y: c1y } : { x: c2x, y: c2y };
+    return { knee: knee, fx: fx, fy: fy };
+  }
+
+  function drawLeg(pathEl, hip, foot, leg) {
+    var r = solveIK(hip.x, hip.y, foot.x, foot.y, leg.l1, leg.l2);
+    pathEl.setAttribute("d", "M " + hip.x.toFixed(1) + " " + hip.y.toFixed(1) +
+      " L " + r.knee.x.toFixed(1) + " " + r.knee.y.toFixed(1) +
+      " L " + r.fx.toFixed(1) + " " + r.fy.toFixed(1));
+  }
+
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (paused || hidden) { requestAnimationFrame(frame); return; }
+    {
+      t += dt * speeds[speedIdx];
+      wheelDeg += dt * 430 * speeds[speedIdx];
+      crankDeg += dt * 185 * speeds[speedIdx];
+      nextBlink -= dt;
+      if (nextBlink <= 0 && blinkLeft <= 0) { blinkLeft = 0.13; }
+      if (blinkLeft > 0) {
+        blinkLeft -= dt;
+        if (blinkLeft <= 0) { nextBlink = 2.5 + Math.random() * 3.5; }
+      }
+    }
+    eyelid.setAttribute("opacity", blinkLeft > 0 ? 1 : 0);
+
+    var rad = crankDeg * Math.PI / 180;
+    var rigBob = 1.8 * Math.sin(t * 4.4);
+    var bodyBob = 2.4 * Math.sin(t * 4.4 + 0.9);
+    var bodyRot = 2.2 * Math.sin(t * 2.2);
+
+    rig.setAttribute("transform", "translate(0 " + rigBob.toFixed(2) + ")");
+    bodyG.setAttribute("transform", "translate(0 " + bodyBob.toFixed(2) + ") rotate(" + bodyRot.toFixed(2) + " 598 378)");
+    headG.setAttribute("transform", "rotate(" + (1.8 * Math.sin(t * 2.2 + 0.4)).toFixed(2) + " 680 344)");
+    hatG.setAttribute("transform", "translate(0 " + (2.6 * Math.sin(t * 4.4 + 1.6)).toFixed(2) + ") rotate(" + (2 * Math.sin(t * 2.2 + 0.9)).toFixed(2) + " 706 296)");
+    flipperG.setAttribute("transform", "rotate(" + (4 * Math.sin(t * 5.6)).toFixed(2) + " 636 372)");
+    flipperFarG.setAttribute("transform", "rotate(" + (9 * Math.sin(t * 5.6 + 1)).toFixed(2) + " 596 384)");
+    tailG.setAttribute("transform", "rotate(" + (3 + 3 * Math.sin(t * 5.6 + 1)).toFixed(2) + " 530 380)");
+    shadow.setAttribute("transform", "translate(655 666) translate(0 " + (rigBob * 0.4).toFixed(2) + ") scale(1 " + (1 - 0.035 * Math.sin(t * 4.4)).toFixed(3) + ") translate(-655 -666)");
+
+    wheelRear.setAttribute("transform", "rotate(" + wheelDeg.toFixed(1) + " 545 585)");
+    wheelFront.setAttribute("transform", "rotate(" + wheelDeg.toFixed(1) + " 775 585)");
+    gear.setAttribute("transform", "rotate(" + crankDeg.toFixed(1) + " 640 610)");
+
+    var pa = { x: BB.x + CR * Math.cos(rad), y: BB.y + CR * Math.sin(rad) };
+    var pb = { x: BB.x - CR * Math.cos(rad), y: BB.y - CR * Math.sin(rad) };
+    crankA.setAttribute("x2", pa.x.toFixed(1));
+    crankA.setAttribute("y2", pa.y.toFixed(1));
+    crankB.setAttribute("x2", pb.x.toFixed(1));
+    crankB.setAttribute("y2", pb.y.toFixed(1));
+    pedalA.setAttribute("transform", "translate(" + pa.x.toFixed(1) + " " + pa.y.toFixed(1) + ") rotate(" + (-crankDeg).toFixed(1) + ")");
+    pedalB.setAttribute("transform", "translate(" + pb.x.toFixed(1) + " " + pb.y.toFixed(1) + ") rotate(" + (-crankDeg).toFixed(1) + ")");
+
+    var footNearPos = { x: pa.x + 4, y: pa.y - 6, rot: -crankDeg + 6 * Math.sin(t * 9) };
+    var footFarPos = { x: pb.x + 4, y: pb.y - 6, rot: -crankDeg + 6 * Math.sin(t * 9 + 1.7) };
+    drawLeg(legNear, { x: HIP.near.x, y: HIP.near.y + bodyBob }, footNearPos, LEG.near);
+    drawLeg(legFar, { x: HIP.far.x, y: HIP.far.y }, footFarPos, LEG.far);
+    footNear.setAttribute("transform", "translate(" + footNearPos.x.toFixed(1) + " " + footNearPos.y.toFixed(1) + ") rotate(" + footNearPos.rot.toFixed(1) + ")");
+    footFar.setAttribute("transform", "translate(" + footFarPos.x.toFixed(1) + " " + footFarPos.y.toFixed(1) + ") rotate(" + footFarPos.rot.toFixed(1) + ")");
+
+    var d1 = "M 662 356", d2 = "M 664 360";
+    for (var k = 1; k <= 7; k++) {
+      var wy = 356 + 12 + Math.sin(t * 7 - k * 0.9) * 7 * (k * 0.16) + k * k * 0.5;
+      var wy2 = 360 + 16 + Math.sin(t * 7 - k * 0.9 + 0.7) * 8 * (k * 0.16) + k * k * 0.5;
+      d1 += " L " + (662 - k * 25) + " " + wy.toFixed(1);
+      d2 += " L " + (664 - k * 25) + " " + wy2.toFixed(1);
+    }
+    scarf.setAttribute("d", d1);
+    scarf2.setAttribute("d", d2);
+
+    requestAnimationFrame(frame);
+  }
+
+  var btnPause = $("btnPause"), btnSpeed = $("btnSpeed"), btnNight = $("btnNight");
+
+  btnPause.addEventListener("click", function () {
+    paused = !paused;
+    document.body.classList.toggle("paused", paused);
+    btnPause.textContent = paused ? "▶ 播放" : "⏸ 暂停";
+  });
+  btnSpeed.addEventListener("click", function () {
+    speedIdx = (speedIdx + 1) % speeds.length;
+    btnSpeed.textContent = "速度 " + speeds[speedIdx].toFixed(1) + "×";
+  });
+  btnNight.addEventListener("click", function () {
+    document.body.classList.toggle("night");
+    btnNight.textContent = document.body.classList.contains("night") ? "☀️ 极昼" : "🌙 极夜";
+  });
+  document.addEventListener("visibilitychange", function () { hidden = document.hidden; });
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { e.preventDefault(); btnPause.click(); }
+    else if (e.key === "s" || e.key === "S") { btnSpeed.click(); }
+    else if (e.key === "n" || e.key === "N") { btnNight.click(); }
+  });
+
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    paused = true;
+    document.body.classList.add("paused");
+    btnPause.textContent = "▶ 播放";
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

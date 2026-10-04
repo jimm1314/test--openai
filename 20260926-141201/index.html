@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>鹈鹕骑行日记</title>
+  <style>
+    :root {
+      --ink: #10283a;
+      --muted: #557086;
+      --cream: #fff8ec;
+      --coral: #ff7c62;
+      --teal: #1fb5a7;
+      --sun: #ffd36a;
+      --night: #2b386e;
+      --sky-shift: 0;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: ui-rounded, "SF Pro Rounded", "PingFang SC", system-ui, sans-serif;
+      color: var(--ink);
+      background: #f7e9d5;
+    }
+    button, input { font: inherit; }
+    .page {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 78% 18%, rgba(255, 240, 187, .6), transparent 22%),
+        linear-gradient(180deg, #9dd9db 0%, #d8efd4 50%, #f9dfb4 100%);
+      transition: background 1.2s ease;
+    }
+    .page.night {
+      background:
+        radial-gradient(circle at 20% 15%, rgba(202, 215, 255, .18), transparent 20%),
+        linear-gradient(180deg, #1d2f61 0%, #465484 52%, #ad8f8b 100%);
+    }
+    .grain {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      opacity: .09;
+      mix-blend-mode: soft-light;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+    }
+    .topbar {
+      position: absolute;
+      z-index: 20;
+      top: clamp(16px, 4vw, 42px);
+      left: clamp(18px, 6vw, 90px);
+      right: clamp(18px, 6vw, 90px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: .04em;
+      font-size: clamp(13px, 1.5vw, 17px);
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .page.night .brand { color: #fff5de; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      color: #fff8ec;
+      background: var(--coral);
+      box-shadow: 0 8px 18px rgba(233, 98, 65, .25);
+      transform: rotate(-8deg);
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 14px;
+      border: 1px solid rgba(16, 40, 58, .1);
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 236, .58);
+      backdrop-filter: blur(10px);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .page.night .badge { color: #fff5de; background: rgba(30, 46, 92, .5); border-color: rgba(255,255,255,.16); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 5px rgba(31,181,167,.15); }
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+    }
+    .sun {
+      position: absolute;
+      top: 13%;
+      right: 17%;
+      width: clamp(70px, 11vw, 145px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--sun);
+      box-shadow: 0 0 0 16px rgba(255,211,106,.12), 0 0 100px 28px rgba(255,219,142,.38);
+      transition: all 1.2s ease;
+    }
+    .page.night .sun {
+      top: 15%;
+      right: 18%;
+      width: clamp(50px, 8vw, 102px);
+      background: #ecf0ff;
+      box-shadow: 0 0 0 13px rgba(218,227,255,.12), 0 0 90px 18px rgba(210,221,255,.18);
+    }
+    .moon-cut { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: #344479; transform: translate(25%, -18%); opacity: 0; transition: opacity 1.2s; }
+    .page.night .moon-cut { opacity: 1; }
+    .clouds { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .cloud {
+      position: absolute;
+      width: 150px;
+      height: 34px;
+      border-radius: 40px;
+      background: rgba(255,255,255,.6);
+      filter: blur(.2px);
+      animation: drift linear infinite;
+    }
+    .cloud::before, .cloud::after { content:""; position:absolute; bottom: 9px; border-radius: 50%; background: inherit; }
+    .cloud::before { width: 62px; height: 62px; left: 23px; }
+    .cloud::after { width: 44px; height: 44px; left: 80px; }
+    .cloud.c1 { top: 21%; left: -180px; animation-duration: 44s; opacity: .55; transform: scale(.8); }
+    .cloud.c2 { top: 31%; left: -230px; animation-duration: 58s; opacity: .35; transform: scale(1.2); animation-delay: -22s; }
+    .cloud.c3 { top: 12%; left: -160px; animation-duration: 66s; opacity: .28; transform: scale(.66); animation-delay: -39s; }
+    .page.night .cloud { opacity: .13; }
+    @keyframes drift { to { translate: calc(100vw + 350px) 0; } }
+    .landscape { position: absolute; inset: 35% 0 0; pointer-events: none; }
+    .hill { position: absolute; left: -8%; width: 120%; border-radius: 50% 50% 0 0; }
+    .hill.back { bottom: 35%; height: 46%; background: #8fc4ae; opacity: .58; transform: translateX(calc(var(--sky-shift) * -.35px)); }
+    .hill.mid { bottom: 20%; height: 42%; background: #69a08e; opacity: .66; transform: translateX(calc(var(--sky-shift) * -.7px)); }
+    .hill.front { bottom: 5%; height: 30%; background: #3d776e; transform: translateX(calc(var(--sky-shift) * -1.1px)); }
+    .page.night .hill.back { background: #5f7391; opacity: .56; }
+    .page.night .hill.mid { background: #4b607d; opacity: .75; }
+    .page.night .hill.front { background: #283f59; }
+    .road {
+      position: absolute;
+      left: -10%;
+      bottom: -22%;
+      width: 120%;
+      height: 50%;
+      border-radius: 50% 50% 0 0;
+      background: #dba876;
+      transform: rotate(-2deg);
+      box-shadow: inset 0 34px 0 rgba(255,247,215,.24);
+    }
+    .road::before {
+      content: "";
+      position: absolute;
+      top: 35%;
+      left: -2%;
+      width: 104%;
+      height: 8px;
+      background: repeating-linear-gradient(90deg, rgba(255,248,220,.85) 0 52px, transparent 52px 95px);
+      opacity: .75;
+      animation: roadDash .75s linear infinite;
+    }
+    .page.night .road { background: #6a5261; box-shadow: inset 0 34px 0 rgba(233, 189, 145, .12); }
+    .page.night .road::before { opacity: .32; }
+    @keyframes roadDash { to { transform: translateX(-95px); } }
+    .hero {
+      position: relative;
+      z-index: 7;
+      width: min(100%, 1180px);
+      margin-top: clamp(32px, 7vh, 82px);
+      padding: 0 clamp(20px, 5vw, 72px);
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      align-items: center;
+      gap: clamp(10px, 4vw, 70px);
+    }
+    .copy { align-self: start; padding-top: clamp(45px, 10vh, 120px); }
+    .eyebrow { display: flex; align-items: center; gap: 9px; color: var(--coral); font-size: 12px; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+    .eyebrow::before { content:""; width: 28px; height: 3px; border-radius: 3px; background: currentColor; }
+    h1 { max-width: 520px; margin: 15px 0 17px; font-size: clamp(42px, 6vw, 82px); line-height: .98; letter-spacing: -.055em; }
+    .page.night h1 { color: #fff6dc; }
+    .lead { max-width: 360px; margin: 0; color: var(--muted); font-size: clamp(14px, 1.5vw, 18px); line-height: 1.65; }
+    .page.night .lead { color: #d8def1; }
+    .meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 25px; }
+    .chip { padding: 7px 11px; border-radius: 9px; color: #466276; background: rgba(255,248,236,.6); font-size: 12px; font-weight: 750; }
+    .page.night .chip { color: #eef0ff; background: rgba(32, 49, 92, .52); }
+    .card {
+      position: relative;
+      min-height: 450px;
+      display: grid;
+      place-items: center;
+      border-radius: 38px;
+      background: rgba(255,248,236,.2);
+      border: 1px solid rgba(255,255,255,.48);
+      box-shadow: 0 28px 80px rgba(73,74,76,.12), inset 0 1px 0 rgba(255,255,255,.45);
+      backdrop-filter: blur(7px);
+      overflow: hidden;
+    }
+    .page.night .card { background: rgba(31, 51, 95, .22); border-color: rgba(214,225,255,.18); box-shadow: 0 28px 80px rgba(3,10,35,.28), inset 0 1px 0 rgba(255,255,255,.12); }
+    .card::after { content:""; position:absolute; inset: 0; background: radial-gradient(circle at 62% 30%, rgba(255,255,255,.35), transparent 30%); pointer-events:none; }
+    .scene-svg { width: 100%; height: auto; overflow: visible; }
+    #rider { transform-origin: 51% 64%; }
+    #pelican { transform-origin: 50% 53%; }
+    #wing { transform-origin: 49% 39%; }
+    #legA, #legB { transform-origin: 50% 0%; }
+    #pedalA, #pedalB { transform-origin: 50% 50%; }
+    .control-panel {
+      position: absolute;
+      z-index: 30;
+      left: 50%;
+      bottom: clamp(17px, 4vh, 42px);
+      translate: -50% 0;
+      width: min(92vw, 650px);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 11px 14px;
+      border: 1px solid rgba(255,255,255,.58);
+      border-radius: 18px;
+      background: rgba(255,248,236,.62);
+      box-shadow: 0 15px 36px rgba(31, 56, 66, .13), inset 0 1px 0 rgba(255,255,255,.6);
+      backdrop-filter: blur(14px);
+    }
+    .page.night .control-panel { background: rgba(25,41,82,.62); border-color: rgba(255,255,255,.14); }
+    .control-panel button { border: 0; cursor: pointer; }
+    .play {
+      display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border-radius: 13px;
+      color: #fff8ec; background: var(--coral); box-shadow: 0 7px 13px rgba(242, 104, 76, .28); transition: transform .2s ease;
+    }
+    .play:hover { transform: translateY(-2px) rotate(-4deg); }
+    .play svg { width: 17px; }
+    .scrub { flex: 1; min-width: 100px; }
+    .scrub input { width: 100%; accent-color: var(--coral); cursor: pointer; }
+    .time { min-width: 76px; color: var(--muted); font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
+    .page.night .time { color: #d8def1; }
+    .toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 750; white-space: nowrap; }
+    .page.night .toggle { color: #d8def1; }
+    .switch { position: relative; width: 35px; height: 20px; border-radius: 20px; background: #b3c6c6; transition: background .3s; }
+    .switch::after { content:""; position:absolute; top: 3px; left: 3px; width:14px; height:14px; border-radius:50%; background:#fff8ec; box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform .3s; }
+    .toggle input { position:absolute; opacity:0; pointer-events:none; }
+    .toggle input:checked + .switch { background: var(--teal); }
+    .toggle input:checked + .switch::after { transform: translateX(15px); }
+    .hint { position: absolute; z-index: 10; right: clamp(18px, 5vw, 72px); top: 48%; color: rgba(16,40,58,.56); font-size: 11px; letter-spacing: .04em; transform: rotate(90deg) translateX(100%); transform-origin: right center; }
+    .page.night .hint { color: rgba(255,255,255,.45); }
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .page { min-height: 820px; }
+      .topbar { align-items: flex-start; }
+      .badge { display: none; }
+      .hero { grid-template-columns: 1fr; margin-top: 60px; gap: 5px; }
+      .copy { padding-top: 38px; text-align: center; }
+      .eyebrow { justify-content: center; }
+      h1 { margin-left: auto; margin-right: auto; font-size: clamp(43px, 14vw, 70px); }
+      .lead { margin: 0 auto; }
+      .meta { justify-content: center; }
+      .card { min-height: 360px; border-radius: 30px; }
+      .hint { display: none; }
+      .control-panel { bottom: 15px; }
+      .toggle { font-size: 0; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" id="page">
+    <div class="grain"></div>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span><span>沿海风物志 · 01</span></div>
+      <div class="badge"><span class="live-dot"></span><span id="status">正在巡航 · 海风 12 km/h</span></div>
+    </header>
+
+    <div class="clouds" aria-hidden="true"><i class="cloud c1"></i><i class="cloud c2"></i><i class="cloud c3"></i></div>
+    <div class="sun"><span class="moon-cut"></span></div>
+    <div class="landscape" aria-hidden="true">
+      <div class="hill back"></div><div class="hill mid"></div><div class="hill front"></div><div class="road"></div>
+    </div>
+
+    <section class="hero">
+      <div class="copy">
+        <div class="eyebrow">Pelican on tour</div>
+        <h1>今天，<br>也要去看海。</h1>
+        <p class="lead">一只鹈鹕、一辆单车，还有刚好够用的风。把海岸线踩成一段轻快的旋律。</p>
+        <div class="meta"><span class="chip">#慢速旅行</span><span class="chip">#沿海公路</span><span class="chip">#羽毛会飞</span></div>
+      </div>
+
+      <div class="card">
+        <svg class="scene-svg" viewBox="0 0 760 560" role="img" aria-label="一只鹈鹕正在骑自行车">
+          <defs>
+            <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="8"/><feOffset dy="9"/><feComponentTransfer><feFuncA type="linear" slope=".22"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="tinyShadow"><feGaussianBlur in="SourceAlpha" stdDeviation="2"/><feOffset dy="2"/><feComponentTransfer><feFuncA type="linear" slope=".18"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <linearGradient id="feather" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fff8e6"/><stop offset="1" stop-color="#e7ceb2"/></linearGradient>
+            <linearGradient id="beak" x1="0" x2="1"><stop stop-color="#ffac64"/><stop offset="1" stop-color="#eb6d54"/></linearGradient>
+            <linearGradient id="frame" x1="0" x2="1"><stop stop-color="#1fb5a7"/><stop offset="1" stop-color="#148f95"/></linearGradient>
+          </defs>
+          <g id="rider" filter="url(#softShadow)">
+            <g id="bike" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="230" cy="414" r="73" fill="none" stroke="#173a4b" stroke-width="7"/>
+              <circle cx="570" cy="414" r="73" fill="none" stroke="#173a4b" stroke-width="7"/>
+              <circle cx="230" cy="414" r="61" fill="none" stroke="rgba(255,248,236,.58)" stroke-width="2" stroke-dasharray="2 9"/>
+              <circle cx="570" cy="414" r="61" fill="none" stroke="rgba(255,248,236,.58)" stroke-width="2" stroke-dasharray="2 9"/>
+              <path d="M230 414 L321 325 L442 414 L230 414 L380 414 L321 325 L360 274 L445 283 L442 414" fill="none" stroke="url(#frame)" stroke-width="10"/>
+              <path d="M442 414 L570 414 L548 290" fill="none" stroke="url(#frame)" stroke-width="10"/>
+              <path d="M533 290 L574 284" fill="none" stroke="#173a4b" stroke-width="9"/>
+              <path d="M533 289 L554 278" fill="none" stroke="#173a4b" stroke-width="7"/>
+              <path d="M303 325 L338 325" fill="none" stroke="#173a4b" stroke-width="10"/>
+              <circle cx="442" cy="414" r="12" fill="#ff7c62" stroke="#173a4b" stroke-width="5"/>
+              <g id="pedalA"><path d="M442 414 l-31 26 M410 440 l-20 0" fill="none" stroke="#173a4b" stroke-width="6"/><circle cx="442" cy="414" r="7" fill="#ffd36a" stroke="#173a4b" stroke-width="4"/></g>
+              <g id="pedalB"><path d="M442 414 l31 -26 M474 388 l20 0" fill="none" stroke="#173a4b" stroke-width="6"/><circle cx="442" cy="414" r="7" fill="#ffd36a" stroke="#173a4b" stroke-width="4"/></g>
+            </g>
+            <g id="pelican">
+              <ellipse cx="382" cy="262" rx="86" ry="104" fill="url(#feather)" transform="rotate(-8 382 262)"/>
+              <ellipse cx="414" cy="229" rx="63" ry="70" fill="#fffaf0" transform="rotate(11 414 229)"/>
+              <path d="M349 186 C326 140 360 100 409 111 C451 120 466 162 449 203 C426 189 389 177 349 186Z" fill="#f8e5c7"/>
+              <path d="M366 140 C384 112 420 116 438 137" fill="none" stroke="#e7c9a4" stroke-width="10" stroke-linecap="round"/>
+              <path d="M441 170 C486 165 529 179 557 198 C528 227 485 229 440 211Z" fill="url(#beak)"/>
+              <path d="M441 207 C482 217 519 212 548 200" fill="none" stroke="#d65d50" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="424" cy="163" r="8" fill="#173a4b"/>
+              <circle cx="427" cy="160" r="2.5" fill="#fffdf5"/>
+              <path d="M364 236 C325 263 324 319 365 348 C398 370 428 345 430 306 C431 274 411 247 364 236Z" fill="#e6cbaa" opacity=".9"/>
+              <g id="wing"><path d="M380 216 C335 229 322 285 350 322 C371 349 411 335 425 293 C434 266 418 230 380 216Z" fill="#fff5dd" stroke="#ddc19b" stroke-width="4"/>
+                <path d="M357 252 C375 248 398 260 412 276 M350 273 C376 271 395 282 405 296 M354 296 C374 294 391 302 399 314" fill="none" stroke="#e7c9a4" stroke-width="5" stroke-linecap="round"/>
+              </g>
+              <path id="legA" d="M369 338 C361 365 347 385 333 400" fill="none" stroke="#ec875c" stroke-width="12" stroke-linecap="round"/>
+              <path id="legB" d="M423 338 C434 363 443 384 454 401" fill="none" stroke="#ec875c" stroke-width="12" stroke-linecap="round"/>
+              <path d="M330 400 l-20 11 M330 400 l-2 17 M454 401 l20 8 M454 401 l3 17" fill="none" stroke="#ec875c" stroke-width="7" stroke-linecap="round"/>
+            </g>
+          </g>
+          <g opacity=".32" fill="#fff8ec"><circle cx="108" cy="164" r="3"/><circle cx="145" cy="204" r="2"/><circle cx="634" cy="142" r="3"/><circle cx="677" cy="182" r="2"/></g>
+        </svg>
+        <div class="hint">拖动进度条，看看风从哪里来 ↘</div>
+      </div>
+    </section>
+
+    <div class="control-panel" aria-label="动画控制器">
+      <button class="play" id="playBtn" type="button" aria-label="暂停动画">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path id="playIcon" d="M6 4.5v11l9-5.5-9-5.5Z"/></svg>
+      </button>
+      <div class="scrub"><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="动画进度" /></div>
+      <div class="time" id="time">00:00 / 00:20</div>
+      <label class="toggle" title="切换昼夜"><span>昼夜</span><input id="nightToggle" type="checkbox" /><i class="switch"></i></label>
+    </div>
+  </main>
+  <script>
+    (() => {
+      const page = document.getElementById('page');
+      const rider = document.getElementById('rider');
+      const pelican = document.getElementById('pelican');
+      const wing = document.getElementById('wing');
+      const legA = document.getElementById('legA');
+      const legB = document.getElementById('legB');
+      const pedalA = document.getElementById('pedalA');
+      const pedalB = document.getElementById('pedalB');
+      const playBtn = document.getElementById('playBtn');
+      const playIcon = document.getElementById('playIcon');
+      const scrub = document.getElementById('scrub');
+      const time = document.getElementById('time');
+      const status = document.getElementById('status');
+      const nightToggle = document.getElementById('nightToggle');
+      const duration = 20;
+      let playing = true;
+      let t = 0;
+      let last = performance.now();
+
+      function fmt(seconds) {
+        const n = Math.max(0, Math.min(duration, seconds));
+        return `00:${String(Math.floor(n)).padStart(2, '0')} / 00:${String(duration).padStart(2, '0')}`;
+      }
+      function render(now) {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        if (playing) t = (t + dt) % duration;
+        const phase = (t / duration) * Math.PI * 2;
+        const pedal = phase * 4;
+        const bob = Math.sin(phase * 2) * 2.8;
+        const flutter = Math.sin(phase * 2 + .5) * 5;
+        const wheel = (t / duration) * 720;
+        rider.style.transform = `translateY(${bob}px)`;
+        pelican.style.transform = `rotate(${Math.sin(phase * 2) * .8}deg)`;
+        wing.style.transform = `rotate(${flutter}deg)`;
+        legA.style.transform = `rotate(${Math.sin(pedal) * 12}deg)`;
+        legB.style.transform = `rotate(${Math.sin(pedal + Math.PI) * 12}deg)`;
+        pedalA.style.transform = `rotate(${wheel}deg)`;
+        pedalB.style.transform = `rotate(${wheel + 180}deg)`;
+        document.documentElement.style.setProperty('--sky-shift', String((t * 16) % 110));
+        scrub.value = String(Math.round(t / duration * 1000));
+        time.textContent = fmt(t);
+        requestAnimationFrame(render);
+      }
+      function updateButton() {
+        playIcon.setAttribute('d', playing ? 'M6 4.5v11M13 4.5v11' : 'M6 4.5v11l9-5.5-9-5.5Z');
+        playIcon.setAttribute('stroke', playing ? 'currentColor' : 'none');
+        playIcon.setAttribute('stroke-width', playing ? '2.2' : '0');
+        playIcon.setAttribute('fill', playing ? 'none' : 'currentColor');
+        playBtn.setAttribute('aria-label', playing ? '暂停动画' : '播放动画');
+        status.textContent = playing ? '正在巡航 · 海风 12 km/h' : '停在这里 · 听一会儿海';
+      }
+      playBtn.addEventListener('click', () => { playing = !playing; updateButton(); });
+      scrub.addEventListener('input', e => { t = Number(e.target.value) / 1000 * duration; });
+      nightToggle.addEventListener('change', e => { page.classList.toggle('night', e.target.checked); });
+      updateButton();
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#72cbe2" />
+  <title>鹈鹕骑自行车 · Coastal Loop</title>
+  <style>
+    :root {
+      --motion-speed: 1;
+      --ink: #153746;
+      --deep: #092630;
+      --sky-top: #79ccef;
+      --sky-bottom: #e8f8f4;
+      --sea: #4ab6c8;
+      --sea-deep: #238da7;
+      --sand: #f7d28a;
+      --road: #313d4c;
+      --road-light: #566477;
+      --coral: #ed6e5b;
+      --gold: #ffc85a;
+      --feather: #fffaf0;
+      --feather-shadow: #e6e4dc;
+      --orange: #f2a13b;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      min-width: 320px;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      overflow: hidden;
+      color: var(--ink);
+      background: #092630;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input { font: inherit; }
+
+    button { color: inherit; }
+
+    .scene {
+      position: relative;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(180deg, var(--sky-top) 0%, #b9e7f4 48%, var(--sky-bottom) 74%, #bddfd8 100%);
+    }
+
+    .scene.is-paused * {
+      animation-play-state: paused !important;
+    }
+
+    .scene.sprint {
+      --motion-speed: 2.15;
+    }
+
+    .sky-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 76% 18%, rgba(255, 249, 187, .78) 0 5%, rgba(255, 227, 145, .28) 13%, transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,.12), transparent 36%);
+    }
+
+    .sun {
+      position: absolute;
+      top: 8%;
+      right: 12%;
+      width: clamp(74px, 11vw, 142px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 34% 30%, #fffbd5 0 22%, #ffe37b 62%, #ffc24d 100%);
+      box-shadow: 0 0 0 20px rgba(255, 235, 148, .14), 0 0 78px 28px rgba(255, 221, 106, .33);
+      animation: sunPulse 4.8s ease-in-out infinite;
+    }
+
+    .sun::after {
+      content: "";
+      position: absolute;
+      inset: -18%;
+      border: 1px dashed rgba(255, 240, 166, .48);
+      border-radius: 50%;
+      animation: spin 28s linear infinite;
+    }
+
+    .cloud {
+      --cloud-scale: 1;
+      position: absolute;
+      left: -260px;
+      z-index: 2;
+      width: 214px;
+      height: 52px;
+      opacity: .78;
+      border-radius: 50px;
+      background: rgba(255,255,255,.76);
+      box-shadow: 38px -24px 0 8px rgba(255,255,255,.76), 108px -34px 0 3px rgba(255,255,255,.76), 168px -18px 0 10px rgba(255,255,255,.76);
+      transform: scale(var(--cloud-scale));
+      animation: cloudDrift calc(48s / var(--motion-speed)) linear infinite;
+      will-change: transform;
+    }
+
+    .cloud.one { top: 16%; animation-delay: -18s; }
+    .cloud.two { top: 29%; --cloud-scale: .62; opacity: .48; animation-duration: calc(66s / var(--motion-speed)); animation-delay: -44s; }
+    .cloud.three { top: 9%; --cloud-scale: .42; opacity: .44; animation-duration: calc(82s / var(--motion-speed)); animation-delay: -62s; }
+
+    @keyframes cloudDrift {
+      from { transform: translateX(0) scale(var(--cloud-scale)); }
+      to { transform: translateX(calc(100vw + 560px)) scale(var(--cloud-scale)); }
+    }
+
+    @keyframes sunPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .seagull {
+      position: absolute;
+      z-index: 3;
+      width: 42px;
+      height: 18px;
+      opacity: .55;
+      animation: seagullFly calc(26s / var(--motion-speed)) linear infinite;
+    }
+
+    .seagull::before,
+    .seagull::after {
+      content: "";
+      position: absolute;
+      top: 6px;
+      width: 24px;
+      height: 13px;
+      border-top: 3px solid #4c7587;
+      border-radius: 50% 50% 0 0;
+    }
+
+    .seagull::before { left: 0; transform: rotate(12deg); }
+    .seagull::after { right: 0; transform: rotate(-12deg); }
+    .seagull.a { top: 25%; left: 15%; animation-delay: -7s; transform: scale(.9); }
+    .seagull.b { top: 18%; left: 45%; animation-delay: -15s; transform: scale(.58); }
+    .seagull.c { top: 35%; left: 76%; animation-delay: -22s; transform: scale(.72); }
+
+    @keyframes seagullFly {
+      from { translate: -12vw 0; }
+      50% { translate: 38vw -10px; }
+      to { translate: 118vw 6px; }
+    }
+
+    .horizon {
+      position: absolute;
+      inset: 43% 0 0;
+      z-index: 1;
+      background: linear-gradient(180deg, rgba(255,255,255,.16), transparent 14%), linear-gradient(180deg, #72d1d6 0%, var(--sea) 42%, var(--sea-deep) 100%);
+      clip-path: polygon(0 14%, 7% 11%, 14% 16%, 22% 8%, 31% 15%, 40% 10%, 50% 16%, 61% 9%, 72% 14%, 83% 8%, 92% 13%, 100% 9%, 100% 100%, 0 100%);
+    }
+
+    .island {
+      position: absolute;
+      bottom: 39%;
+      z-index: 2;
+      width: 340px;
+      height: 70px;
+      border-radius: 50% 50% 0 0;
+      background: #398e9e;
+      opacity: .72;
+      animation: islandSlide calc(38s / var(--motion-speed)) linear infinite;
+    }
+
+    .island::before,
+    .island::after {
+      content: "";
+      position: absolute;
+      bottom: 22px;
+      border-radius: 50% 50% 0 0;
+      background: #317c92;
+    }
+
+    .island::before { left: 72px; width: 110px; height: 66px; }
+    .island::after { left: 190px; width: 90px; height: 48px; }
+    .island.one { left: 5%; transform: scale(.8); }
+    .island.two { left: 66%; transform: scale(.55); animation-delay: -20s; opacity: .48; }
+
+    @keyframes islandSlide {
+      from { translate: 0 0; }
+      to { translate: -120vw 0; }
+    }
+
+    .wave-field {
+      position: absolute;
+      inset: 47% 0 22%;
+      z-index: 3;
+      pointer-events: none;
+      opacity: .45;
+      background: repeating-linear-gradient(168deg, transparent 0 28px, rgba(255,255,255,.3) 29px 31px, transparent 32px 58px);
+      animation: waveSlide calc(5.6s / var(--motion-speed)) linear infinite;
+    }
+
+    @keyframes waveSlide { to { background-position: -240px 70px; } }
+
+    .shore {
+      position: absolute;
+      inset: auto -6% 20% -6%;
+      z-index: 4;
+      height: 14%;
+      border-radius: 50% 50% 0 0 / 42% 42% 0 0;
+      background: var(--sand);
+      box-shadow: inset 0 12px rgba(255, 248, 204, .48), 0 -8px 0 rgba(255,255,255,.18);
+      transform: rotate(-1.3deg);
+    }
+
+    .shore::before,
+    .shore::after {
+      content: "";
+      position: absolute;
+      width: 170px;
+      height: 30px;
+      border-top: 5px solid rgba(255,255,255,.48);
+      border-radius: 50%;
+      transform: rotate(-8deg);
+    }
+
+    .shore::before { left: 14%; top: 38%; }
+    .shore::after { right: 12%; top: 52%; width: 230px; transform: rotate(7deg); }
+
+    .road {
+      position: absolute;
+      inset: auto 0 0;
+      z-index: 5;
+      height: 23%;
+      background: linear-gradient(180deg, #5a6778 0%, var(--road) 20%, #252d3a 100%);
+      border-top: 4px solid #d7d8c6;
+      box-shadow: inset 0 8px 0 rgba(255,255,255,.07);
+    }
+
+    .road::before {
+      content: "";
+      position: absolute;
+      inset: 38% 0 auto;
+      height: 11px;
+      background: repeating-linear-gradient(90deg, var(--gold) 0 72px, transparent 72px 142px);
+      animation: laneMove calc(.92s / var(--motion-speed)) linear infinite;
+    }
+
+    .road::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 26%;
+      background: repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 3px, transparent 3px 44px);
+      animation: roadTexture calc(1.8s / var(--motion-speed)) linear infinite;
+    }
+
+    @keyframes laneMove { to { background-position: -142px 0; } }
+    @keyframes roadTexture { to { background-position: -44px 0; } }
+
+    .grass-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 23%;
+      z-index: 6;
+      height: 22px;
+      background: repeating-linear-gradient(120deg, #4d9b62 0 7px, #73bc6d 7px 15px, #3f875b 15px 21px);
+      box-shadow: 0 2px 0 rgba(255,255,255,.28);
+      animation: grassMove calc(1.2s / var(--motion-speed)) linear infinite;
+    }
+
+    @keyframes grassMove { to { background-position: -70px 0; } }
+
+    .hud {
+      position: absolute;
+      top: clamp(22px, 4vw, 48px);
+      left: clamp(22px, 5vw, 72px);
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #216879;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .title {
+      margin: 0;
+      color: var(--deep);
+      font-size: clamp(28px, 5vw, 60px);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: .98;
+      text-shadow: 2px 3px 0 rgba(255,255,255,.42);
+    }
+
+    .subtitle {
+      margin: 13px 0 0;
+      color: #236276;
+      font-size: clamp(12px, 1.4vw, 16px);
+      font-weight: 650;
+      letter-spacing: .02em;
+    }
+
+    .telemetry {
+      position: absolute;
+      top: clamp(22px, 4vw, 48px);
+      right: clamp(22px, 5vw, 72px);
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 156px;
+      padding: 11px 13px;
+      border: 1px solid rgba(21,55,70,.18);
+      border-radius: 12px;
+      color: var(--deep);
+      background: rgba(255,255,255,.3);
+      box-shadow: 0 9px 24px rgba(27,88,103,.08), inset 0 1px rgba(255,255,255,.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .live-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #2da773;
+      box-shadow: 0 0 0 5px rgba(45,167,115,.13);
+      animation: livePulse 1.8s ease-in-out infinite;
+    }
+
+    .telemetry.paused .live-dot {
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(255,200,90,.18);
+      animation: none;
+    }
+
+    .telemetry-copy { min-width: 0; }
+    .telemetry-copy strong { display: block; font-size: 12px; line-height: 1; }
+    .telemetry-copy small { display: block; margin-top: 5px; color: #3c7380; font-size: 10px; line-height: 1; }
+    .telemetry-speed { margin-left: auto; font-size: 18px; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .telemetry-speed small { font-size: 10px; font-weight: 750; }
+
+    @keyframes livePulse {
+      50% { box-shadow: 0 0 0 8px rgba(45,167,115,0); }
+    }
+
+    .ride-svg {
+      position: absolute;
+      left: 50%;
+      bottom: 3.5%;
+      z-index: 8;
+      display: block;
+      width: min(960px, 92vw);
+      height: auto;
+      overflow: visible;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 22px 13px rgba(18,65,78,.16));
+      pointer-events: none;
+    }
+
+    .ground-shadow {
+      fill: rgba(8, 39, 49, .22);
+      transform-box: view-box;
+      transform-origin: center;
+      animation: shadowBob calc(1.08s / var(--motion-speed)) ease-in-out infinite;
+    }
+
+    @keyframes shadowBob {
+      50% { transform: scaleX(.94); opacity: .16; }
+    }
+
+    .bike-frame {
+      fill: none;
+      stroke: var(--coral);
+      stroke-width: 11;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .bike-dark {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .wheel-rim {
+      fill: rgba(255,255,255,.12);
+      stroke: #1b2a38;
+      stroke-width: 11;
+    }
+
+    .wheel-inner {
+      fill: none;
+      stroke: rgba(255,255,255,.36);
+      stroke-width: 5;
+    }
+
+    .wheel-spin {
+      transform-box: view-box;
+      animation: wheelSpin calc(1.05s / var(--motion-speed)) linear infinite;
+      transform-origin: 290px 420px;
+    }
+
+    .wheel-spin.front { transform-origin: 665px 420px; }
+
+    .spoke-set {
+      transform-box: view-box;
+      transform-origin: 290px 420px;
+      animation: spokeSpin calc(1.05s / var(--motion-speed)) linear infinite;
+    }
+
+    .spoke-set.front { transform-origin: 665px 420px; }
+
+    @keyframes wheelSpin { to { transform: rotate(360deg); } }
+    @keyframes spokeSpin { to { transform: rotate(-360deg); } }
+
+    .pedal-spin {
+      transform-box: view-box;
+      transform-origin: 472px 420px;
+      animation: wheelSpin calc(1.05s / var(--motion-speed)) linear infinite;
+    }
+
+    .pedal-arm { stroke: #1b2a38; stroke-width: 8; stroke-linecap: round; }
+    .pedal { fill: #1b2a38; }
+
+    .pelican-rig {
+      transform-box: view-box;
+      transform-origin: 472px 280px;
+      animation: rideBob calc(1.08s / var(--motion-speed)) ease-in-out infinite;
+    }
+
+    @keyframes rideBob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .pelican-body { fill: var(--feather); stroke: #d0d6d3; stroke-width: 3; }
+    .pelican-shadow { fill: var(--feather-shadow); opacity: .9; }
+    .pelican-outline { fill: none; stroke: #b9c5c2; stroke-width: 3; stroke-linecap: round; }
+
+    .wing-near {
+      fill: #edece6;
+      stroke: #c3cac6;
+      stroke-width: 3;
+      transform-box: view-box;
+      transform-origin: 430px 235px;
+      animation: wingFlap calc(1.12s / var(--motion-speed)) ease-in-out infinite;
+    }
+
+    .wing-tip {
+      fill: #c6cbc5;
+      opacity: .78;
+    }
+
+    @keyframes wingFlap {
+      0%, 100% { transform: rotate(4deg); }
+      50% { transform: rotate(-9deg) translateY(-9px); }
+    }
+
+    .tail-feathers {
+      transform-box: view-box;
+      transform-origin: 323px 245px;
+      animation: tailWag calc(.84s / var(--motion-speed)) ease-in-out infinite;
+    }
+
+    @keyframes tailWag {
+      0%, 100% { transform: rotate(-4deg); }
+      50% { transform: rotate(5deg); }
+    }
+
+    .pelican-head {
+      transform-box: view-box;
+      transform-origin: 553px 130px;
+      animation: headNod calc(1.12s / var(--motion-speed)) ease-in-out infinite;
+    }
+
+    @keyframes headNod {
+      0%, 100% { transform: rotate(0); }
+      50% { transform: rotate(-4deg) translateY(2px); }
+    }
+
+    .leg-a,
+    .leg-b {
+      fill: none;
+      stroke: var(--orange);
+      stroke-width: 9;
+      stroke-linecap: round;
+      transform-box: view-box;
+      transform-origin: 472px 333px;
+      animation: legPedal calc(1.05s / var(--motion-speed)) linear infinite;
+    }
+
+    .leg-b { animation-delay: calc(-.525s / var(--motion-speed)); }
+
+    @keyframes legPedal {
+      from { transform: rotate(20deg); }
+      50% { transform: rotate(-22deg); }
+      to { transform: rotate(20deg); }
+    }
+
+    .beak {
+      fill: #f4b247;
+      stroke: #d6872d;
+      stroke-width: 3;
+    }
+
+    .pouch {
+      fill: #f4a84c;
+      stroke: #d6872d;
+      stroke-width: 3;
+      transform-box: view-box;
+      transform-origin: 616px 157px;
+      animation: pouchPulse calc(1.18s / var(--motion-speed)) ease-in-out infinite;
+    }
+
+    @keyframes pouchPulse {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(1.08); }
+    }
+
+    .eye { fill: #152631; }
+    .eye-glint { fill: #fff; }
+
+    .helmet {
+      fill: var(--coral);
+      stroke: #c84c42;
+      stroke-width: 3;
+    }
+
+    .helmet-stripe { fill: var(--gold); }
+
+    .control-dock {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(16px, 3.2vh, 34px);
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      width: min(560px, calc(100vw - 32px));
+      padding: 10px 12px 10px 15px;
+      border: 1px solid rgba(255,255,255,.34);
+      border-radius: 14px;
+      color: #f8ffff;
+      background: rgba(14, 37, 50, .72);
+      box-shadow: 0 13px 28px rgba(7,32,43,.22), inset 0 1px rgba(255,255,255,.14);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transform: translateX(-50%);
+    }
+
+    .dock-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 90px;
+      color: rgba(239,251,255,.9);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .dock-status i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #63e0bc;
+      box-shadow: 0 0 0 4px rgba(99,224,188,.14);
+    }
+
+    .dock-status.paused i {
+      background: var(--gold);
+      box-shadow: 0 0 0 4px rgba(255,200,90,.15);
+    }
+
+    .dock-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+    }
+
+    .icon-btn {
+      display: inline-grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 9px;
+      color: #f5ffff;
+      background: rgba(255,255,255,.09);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .icon-btn:hover,
+    .icon-btn:focus-visible {
+      border-color: rgba(255,255,255,.66);
+      background: rgba(255,255,255,.18);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .icon-btn.primary {
+      border-color: var(--gold);
+      color: #173746;
+      background: var(--gold);
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 160px;
+      color: rgba(239,251,255,.68);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .range-wrap input {
+      width: 100px;
+      accent-color: var(--gold);
+      cursor: pointer;
+    }
+
+    .range-wrap output {
+      min-width: 45px;
+      color: #fff;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 680px) {
+      .hud { top: 20px; left: 20px; }
+      .telemetry { top: 20px; right: 20px; min-width: 0; padding: 9px 10px; }
+      .telemetry-copy { display: none; }
+      .telemetry-speed { margin-left: 0; }
+      .ride-svg { width: 116vw; bottom: 8%; }
+      .control-dock { flex-wrap: wrap; gap: 8px; padding: 9px 10px; }
+      .dock-status { min-width: auto; }
+      .dock-actions { margin-left: 0; }
+      .range-wrap { flex: 1 1 150px; min-width: 145px; }
+      .range-wrap input { flex: 1; width: auto; }
+    }
+
+    @media (max-width: 430px) {
+      .title { font-size: 30px; }
+      .subtitle { max-width: 160px; line-height: 1.35; }
+      .sun { top: 16%; right: 7%; width: 66px; }
+      .seagull.c { display: none; }
+      .ride-svg { width: 135vw; bottom: 12%; }
+      .control-dock { bottom: 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene" id="scene" aria-label="鹈鹕骑自行车的海岸公路动画">
+    <div class="sky-glow" aria-hidden="true"></div>
+    <div class="sun" aria-hidden="true"></div>
+    <div class="cloud one" aria-hidden="true"></div>
+    <div class="cloud two" aria-hidden="true"></div>
+    <div class="cloud three" aria-hidden="true"></div>
+    <div class="seagull a" aria-hidden="true"></div>
+    <div class="seagull b" aria-hidden="true"></div>
+    <div class="seagull c" aria-hidden="true"></div>
+    <div class="horizon" aria-hidden="true"></div>
+    <div class="island one" aria-hidden="true"></div>
+    <div class="island two" aria-hidden="true"></div>
+    <div class="wave-field" aria-hidden="true"></div>
+    <div class="shore" aria-hidden="true"></div>
+    <div class="road" aria-hidden="true"></div>
+    <div class="grass-line" aria-hidden="true"></div>
+
+    <header class="hud">
+      <p class="eyebrow">COASTAL LOOP / 07:42 AM</p>
+      <h1 class="title">鹈鹕骑行</h1>
+      <p class="subtitle">沿着海风，把今天踩成一条轻快的线。</p>
+    </header>
+
+    <div class="telemetry" id="telemetry" aria-live="polite">
+      <span class="live-dot" aria-hidden="true"></span>
+      <span class="telemetry-copy"><strong id="telemetryState">运行中</strong><small>潮汐公路 · 循环动画</small></span>
+      <span class="telemetry-speed"><span id="speedValue">18</span><small> km/h</small></span>
+    </div>
+
+    <svg class="ride-svg" viewBox="0 0 900 520" role="img" aria-label="戴着头盔的鹈鹕正在骑红色自行车">
+      <ellipse class="ground-shadow" cx="477" cy="496" rx="300" ry="21" />
+
+      <g class="bike" aria-hidden="true">
+        <g id="backWheel" class="wheel-spin">
+          <circle class="wheel-rim" cx="290" cy="420" r="86" />
+          <circle class="wheel-inner" cx="290" cy="420" r="72" />
+          <g class="spoke-set">
+            <line x1="290" y1="340" x2="290" y2="500" stroke="#637181" stroke-width="3" />
+            <line x1="210" y1="420" x2="370" y2="420" stroke="#637181" stroke-width="3" />
+            <line x1="233" y1="363" x2="347" y2="477" stroke="#637181" stroke-width="3" />
+            <line x1="347" y1="363" x2="233" y2="477" stroke="#637181" stroke-width="3" />
+          </g>
+          <circle cx="290" cy="420" r="12" fill="#e6edf0" stroke="#1b2a38" stroke-width="5" />
+        </g>
+        <g id="frontWheel" class="wheel-spin front">
+          <circle class="wheel-rim" cx="665" cy="420" r="86" />
+          <circle class="wheel-inner" cx="665" cy="420" r="72" />
+          <g class="spoke-set front">
+            <line x1="665" y1="340" x2="665" y2="500" stroke="#637181" stroke-width="3" />
+            <line x1="585" y1="420" x2="745" y2="420" stroke="#637181" stroke-width="3" />
+            <line x1="608" y1="363" x2="722" y2="477" stroke="#637181" stroke-width="3" />
+            <line x1="722" y1="363" x2="608" y2="477" stroke="#637181" stroke-width="3" />
+          </g>
+          <circle cx="665" cy="420" r="12" fill="#e6edf0" stroke="#1b2a38" stroke-width="5" />
+        </g>
+
+        <path class="bike-frame" d="M290 420 L420 420 L366 292 Z M420 420 L665 420 L575 275 L366 292 Z M366 292 L475 292 L420 420" />
+        <path class="bike-dark" d="M575 275 L610 235 L646 236 M604 237 L624 213 L656 216" />
+        <path d="M344 282 L397 282" stroke="#1b2a38" stroke-width="13" stroke-linecap="round" />
+        <path d="M359 292 L366 256" stroke="#1b2a38" stroke-width="9" stroke-linecap="round" />
+        <path d="M566 273 L585 245" stroke="#1b2a38" stroke-width="8" stroke-linecap="round" />
+        <circle cx="420" cy="420" r="18" fill="#e8edf0" stroke="#1b2a38" stroke-width="7" />
+        <g class="pedal-spin">
+          <path class="pedal-arm" d="M420 420 L472 372 M420 420 L368 468" />
+          <rect class="pedal" x="463" y="365" width="30" height="9" rx="4" transform="rotate(-8 478 369)" />
+          <rect class="pedal" x="353" y="464" width="30" height="9" rx="4" transform="rotate(-8 368 468)" />
+        </g>
+        <path d="M626 216 Q650 203 674 217" fill="none" stroke="#1b2a38" stroke-width="8" stroke-linecap="round" />
+        <circle cx="625" cy="215" r="5" fill="#ffc85a" />
+      </g>
+
+      <g class="pelican-rig">
+        <path class="leg-a" d="M439 328 C448 355 460 380 472 411" />
+        <path class="leg-b" d="M480 327 C473 356 482 384 511 420" />
+        <path d="M463 407 Q476 399 488 408" fill="none" stroke="#f2a13b" stroke-width="9" stroke-linecap="round" />
+        <path d="M502 417 Q516 409 528 418" fill="none" stroke="#f2a13b" stroke-width="9" stroke-linecap="round" />
+
+        <g class="tail-feathers">
+          <path class="pelican-body" d="M350 254 L274 222 Q252 213 258 237 L284 285 Q291 297 309 286 Z" />
+          <path class="pelican-shadow" d="M281 239 L325 263 L304 275 Z" />
+          <path class="pelican-outline" d="M275 233 L307 267 M286 226 L319 259" />
+        </g>
+
+        <ellipse class="pelican-body" cx="430" cy="267" rx="116" ry="91" />
+        <path class="pelican-shadow" d="M337 292 C370 342 456 358 513 316 C493 351 421 377 359 336 C338 322 325 306 337 292 Z" />
+        <path class="pelican-outline" d="M360 288 C400 320 460 324 504 295" />
+
+        <path class="wing-near" d="M398 221 C440 198 501 215 527 254 C500 280 461 302 415 286 C396 279 381 252 398 221 Z" />
+        <path class="wing-tip" d="M416 273 C450 277 487 263 516 244 C502 275 466 298 425 287 Z" />
+        <path class="pelican-outline" d="M423 235 C449 249 468 262 482 282 M440 224 C469 240 490 254 501 269" />
+
+        <path class="pelican-body" d="M496 224 C497 185 508 158 534 139 L560 155 C546 184 540 212 545 239 Z" />
+        <path class="pelican-shadow" d="M514 224 C514 185 527 166 544 154 C535 187 535 210 540 236 Z" />
+
+        <g class="pelican-head">
+          <ellipse class="pelican-body" cx="555" cy="128" rx="50" ry="43" />
+          <path class="pelican-shadow" d="M522 133 C534 154 571 164 596 141 C587 165 548 177 521 150 Z" />
+          <path class="helmet" d="M514 108 C526 73 573 66 600 95 L596 112 C568 100 541 99 514 108 Z" />
+          <path class="helmet-stripe" d="M530 83 Q544 74 558 76 L565 103 L546 100 Z" />
+          <circle class="eye" cx="572" cy="120" r="7" />
+          <circle class="eye-glint" cx="575" cy="117" r="2.5" />
+          <path class="beak" d="M588 125 C635 111 707 116 759 141 C714 169 646 169 589 146 Z" />
+          <path class="pouch" d="M592 145 C641 157 696 157 739 143 C709 194 641 202 597 170 Z" />
+          <path d="M608 151 Q664 161 720 147" fill="none" stroke="#d6872d" stroke-width="3" opacity=".7" />
+          <path d="M599 136 C629 137 664 133 696 127" fill="none" stroke="#fff0b9" stroke-width="3" opacity=".68" />
+        </g>
+      </g>
+    </svg>
+
+    <div class="control-dock" aria-label="动画控制">
+      <div class="dock-status" id="dockStatus"><i aria-hidden="true"></i><span id="dockState">LIVE LOOP</span></div>
+      <div class="range-wrap">
+        <label for="speedRange">节奏</label>
+        <input id="speedRange" type="range" min="0.65" max="2.4" step="0.05" value="1" aria-label="调整动画速度" />
+        <output id="speedOutput" for="speedRange">1.0×</output>
+      </div>
+      <div class="dock-actions">
+        <button class="icon-btn primary" id="toggleBtn" type="button" title="暂停动画" aria-label="暂停动画">Ⅱ</button>
+        <button class="icon-btn" id="sprintBtn" type="button" title="加速冲刺" aria-label="加速冲刺" aria-pressed="false">↯</button>
+        <button class="icon-btn" id="resetBtn" type="button" title="恢复默认" aria-label="恢复默认">↺</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const scene = document.getElementById('scene');
+      const telemetry = document.getElementById('telemetry');
+      const telemetryState = document.getElementById('telemetryState');
+      const speedValue = document.getElementById('speedValue');
+      const dockStatus = document.getElementById('dockStatus');
+      const dockState = document.getElementById('dockState');
+      const toggleBtn = document.getElementById('toggleBtn');
+      const sprintBtn = document.getElementById('sprintBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const speedRange = document.getElementById('speedRange');
+      const speedOutput = document.getElementById('speedOutput');
+
+      let running = true;
+      let sprinting = false;
+
+      function updateSpeed() {
+        const base = Number(speedRange.value);
+        const effective = sprinting ? base * 2.15 : base;
+        root.style.setProperty('--motion-speed', effective.toFixed(2));
+        speedOutput.textContent = `${base.toFixed(1)}×`;
+        speedValue.textContent = Math.round(18 * effective);
+      }
+
+      function updateState() {
+        scene.classList.toggle('is-paused', !running);
+        telemetry.classList.toggle('paused', !running);
+        dockStatus.classList.toggle('paused', !running);
+        telemetryState.textContent = running ? '运行中' : '已暂停';
+        dockState.textContent = running ? 'LIVE LOOP' : 'PAUSED';
+        toggleBtn.textContent = running ? 'Ⅱ' : '▶';
+        toggleBtn.title = running ? '暂停动画' : '继续动画';
+        toggleBtn.setAttribute('aria-label', toggleBtn.title);
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        running = !running;
+        updateState();
+      });
+
+      sprintBtn.addEventListener('click', () => {
+        sprinting = !sprinting;
+        scene.classList.toggle('sprint', sprinting);
+        sprintBtn.setAttribute('aria-pressed', String(sprinting));
+        sprintBtn.title = sprinting ? '关闭加速' : '加速冲刺';
+        sprintBtn.setAttribute('aria-label', sprintBtn.title);
+        updateSpeed();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        running = true;
+        sprinting = false;
+        scene.classList.remove('sprint');
+        speedRange.value = '1';
+        sprintBtn.setAttribute('aria-pressed', 'false');
+        sprintBtn.title = '加速冲刺';
+        sprintBtn.setAttribute('aria-label', '加速冲刺');
+        updateSpeed();
+        updateState();
+      });
+
+      speedRange.addEventListener('input', updateSpeed);
+      updateSpeed();
+      updateState();
+    })();
+  </script>
+</body>
+</html>

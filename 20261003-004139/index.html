@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>超级玛丽骑自行车 · Super Mario Cycling</title>
+<style>
+  /* ============ 基础 ============ */
+  :root{
+    /* 地面砖块（经典马力欧地面） */
+    --tile-ground: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23c8641e'/><rect width='16' height='3' fill='%23e8944a'/><rect y='3' width='16' height='1.4' fill='%23a04010'/><rect x='7' y='4.4' width='1.8' height='11.6' fill='%23a04010'/><rect y='9.6' width='16' height='1.8' fill='%23a04010'/></svg>");
+    /* 云 */
+    --tile-cloud: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='90'><g fill='%23ffffff'><rect x='40' y='46' width='132' height='26'/><rect x='58' y='30' width='30' height='18'/><rect x='84' y='18' width='54' height='30'/><rect x='134' y='28' width='32' height='20'/><rect x='162' y='40' width='34' height='14'/><rect x='20' y='54' width='26' height='16'/></g><g fill='%23d7e9ff'><rect x='40' y='66' width='132' height='6'/><rect x='20' y='64' width='26' height='6'/><rect x='84' y='42' width='54' height='5'/></g></svg>");
+    /* 远山 */
+    --tile-hill: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='200'><g><rect x='20' y='180' width='240' height='20' fill='%2363d24a'/><rect x='140' y='180' width='120' height='20' fill='%2347b32f'/><rect x='40' y='160' width='200' height='20' fill='%2363d24a'/><rect x='140' y='160' width='100' height='20' fill='%2347b32f'/><rect x='60' y='140' width='160' height='20' fill='%2363d24a'/><rect x='140' y='140' width='80' height='20' fill='%2347b32f'/><rect x='80' y='120' width='120' height='20' fill='%2363d24a'/><rect x='140' y='120' width='60' height='20' fill='%2347b32f'/><rect x='100' y='100' width='80' height='20' fill='%2363d24a'/><rect x='140' y='100' width='40' height='20' fill='%2347b32f'/><rect x='118' y='80' width='44' height='20' fill='%2363d24a'/><rect x='140' y='80' width='22' height='20' fill='%2347b32f'/><rect x='132' y='64' width='16' height='16' fill='%2363d24a'/><rect x='140' y='64' width='8' height='16' fill='%2347b32f'/><rect x='96' y='150' width='16' height='9' fill='%232c8a17'/><rect x='168' y='130' width='13' height='8' fill='%232c8a17'/></g><g><rect x='280' y='180' width='130' height='20' fill='%2363d24a'/><rect x='340' y='180' width='70' height='20' fill='%2347b32f'/><rect x='296' y='164' width='100' height='16' fill='%2363d24a'/><rect x='340' y='164' width='56' height='16' fill='%2347b32f'/><rect x='312' y='148' width='68' height='16' fill='%2363d24a'/><rect x='340' y='148' width='40' height='16' fill='%2347b32f'/><rect x='330' y='134' width='32' height='14' fill='%2363d24a'/><rect x='340' y='134' width='22' height='14' fill='%2347b32f'/></g></svg>");
+    /* 灌木 */
+    --tile-bush: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='60'><rect x='0' y='34' width='260' height='26' fill='%2355d13c'/><rect x='26' y='18' width='44' height='20' fill='%2355d13c'/><rect x='56' y='6' width='60' height='32' fill='%2355d13c'/><rect x='104' y='16' width='40' height='20' fill='%2355d13c'/><rect x='140' y='4' width='66' height='32' fill='%2355d13c'/><rect x='196' y='18' width='40' height='18' fill='%2355d13c'/><rect x='0' y='50' width='260' height='10' fill='%233a9a26'/></svg>");
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    overflow:hidden;
+    background:#5c94fc;
+    color:#fff;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",ui-monospace,Menlo,monospace;
+    -webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:none;
+  }
+  #stage{position:fixed;inset:0;overflow:hidden;
+    background:linear-gradient(#4e88fb 0%,#69a1ff 38%,#a9d3ff 72%,#dcefff 100%);
+  }
+
+  /* ============ 太阳 ============ */
+  #sun{position:absolute;right:8%;top:7%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 42% 40%,#fffbdc,#ffe259 52%,#ffc21a 72%);
+    box-shadow:0 0 60px 20px rgba(255,216,80,.45),0 0 160px 70px rgba(255,216,80,.18);
+    animation:sunPulse 7s ease-in-out infinite;pointer-events:none}
+  @keyframes sunPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+  /* ============ 视差层 ============ */
+  .layer{position:absolute;left:0;right:0;background-repeat:repeat-x;image-rendering:pixelated;pointer-events:none}
+  #cloudsFar {bottom:60%;height:74px;  background-image:var(--tile-cloud);background-size:260px 90px;opacity:.62}
+  #cloudsNear{bottom:50%;height:110px; background-image:var(--tile-cloud);background-size:390px 135px;opacity:.95}
+  #hills     {bottom:var(--gh,120px);height:200px;background-image:var(--tile-hill);background-size:420px 200px}
+  #bushes    {bottom:var(--gh,120px);height:60px; background-image:var(--tile-bush);background-size:260px 60px}
+
+  /* ============ 地面 ============ */
+  #ground{position:absolute;left:0;right:0;bottom:0;height:var(--gh,120px);
+    background-image:var(--tile-ground);background-size:48px 48px;background-repeat:repeat;
+    image-rendering:pixelated}
+  #ground::after{content:"";position:absolute;left:0;right:0;top:-4px;height:4px;
+    background:rgba(255,255,255,.28)}
+
+  /* ============ 道具层（管道 / 砖块 / 问号） ============ */
+  #props,#coins{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+  #props{z-index:2}
+  #coins{z-index:4}
+  .prop{position:absolute;left:0;top:0;will-change:transform}
+  .prop svg{display:block;image-rendering:pixelated}
+
+  .coin{position:absolute;left:0;top:0;width:32px;height:32px;will-change:transform}
+  .coin i{display:block;width:100%;height:100%;border-radius:50%;
+    background:radial-gradient(circle at 36% 30%,#fff6c0,#ffd23f 46%,#e29a00 100%);
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,.5),0 0 14px rgba(255,210,63,.65);
+    animation:coinspin .8s linear infinite}
+  @keyframes coinspin{0%{transform:scaleX(1)}25%{transform:scaleX(.2)}50%{transform:scaleX(-1)}75%{transform:scaleX(.2)}100%{transform:scaleX(1)}}
+  .coin.pop{animation:coinPop .42s ease-out forwards}
+  @keyframes coinPop{0%{opacity:1}100%{opacity:0;transform:translate3d(var(--x),calc(var(--y) - 46px),0) scale(1.9)}}
+  .plus{position:absolute;left:0;top:0;color:#ffe259;font-weight:800;font-size:19px;
+    text-shadow:0 2px 0 #a06000,0 0 12px rgba(255,215,60,.9);animation:plusUp .8s ease-out forwards}
+  @keyframes plusUp{0%{opacity:1}100%{opacity:0;transform:translate3d(var(--x),calc(var(--y) - 60px),0)}}
+
+  /* ============ 骑手 ============ */
+  #rider{position:absolute;z-index:5;will-change:transform;transform-origin:50% 100%}
+  #riderSvg{display:block;width:100%;height:100%;overflow:visible}
+  /* 地面阴影：始终贴地，跳跃时缩小 */
+  #shadow{position:absolute;z-index:4;pointer-events:none;border-radius:50%;
+    background:radial-gradient(closest-side,rgba(0,0,0,.5),rgba(0,0,0,.22) 62%,rgba(0,0,0,0) 100%);
+    will-change:transform}
+
+  /* 速度线 */
+  #speedlines{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .3s}
+  #speedlines span{position:absolute;height:3px;border-radius:2px;
+    background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.85));
+    animation:zoom .36s linear infinite}
+  @keyframes zoom{from{transform:translateX(0)}to{transform:translateX(-220px)}}
+
+  /* ============ HUD ============ */
+  #hud{position:absolute;left:18px;top:16px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;
+    font-size:13px;letter-spacing:.5px}
+  .chip{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;
+    background:rgba(12,24,52,.42);border:1px solid rgba(255,255,255,.28);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    box-shadow:0 4px 14px rgba(0,20,60,.18)}
+  .chip b{font-size:15px;font-variant-numeric:tabular-nums}
+  .chip .ci{width:15px;height:15px;border-radius:50%;
+    background:radial-gradient(circle at 36% 30%,#fff6c0,#ffd23f 46%,#e29a00 100%);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
+
+  #title{position:absolute;left:50%;top:20px;transform:translateX(-50%);z-index:20;
+    font-size:15px;font-weight:800;letter-spacing:3px;white-space:nowrap;
+    color:#fff;text-shadow:0 3px 0 #1b3f8f,0 0 18px rgba(80,140,255,.55);opacity:.95}
+
+  #sound{position:absolute;right:18px;top:16px;z-index:20;width:42px;height:42px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.3);background:rgba(12,24,52,.42);color:#fff;font-size:18px;
+    cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #sound:active{transform:scale(.94)}
+
+  /* ============ 控制条 ============ */
+  #controls{position:absolute;left:50%;bottom:calc(var(--gh,120px) + 16px);transform:translateX(-50%);
+    z-index:20;display:flex;gap:10px}
+  #controls button{font:inherit;font-size:13px;font-weight:700;color:#fff;cursor:pointer;
+    padding:10px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.35);
+    background:rgba(12,24,52,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    box-shadow:0 6px 16px rgba(0,20,60,.2);transition:transform .08s,background .15s}
+  #controls button:hover{background:rgba(20,40,86,.6)}
+  #controls button.on{background:#ffd23f;color:#5a3600;border-color:#fff;transform:translateY(2px)}
+  #hint{position:absolute;left:50%;bottom:calc(var(--gh,120px) + 72px);transform:translateX(-50%);
+    z-index:20;font-size:12px;letter-spacing:1px;opacity:.85;white-space:nowrap;
+    text-shadow:0 2px 6px rgba(0,30,80,.4)}
+  @media (max-width:760px){
+    #title{display:none}
+    #hint{display:none}
+    #controls{bottom:14px}
+    #hud{font-size:11px;left:12px;top:12px}
+    .chip{padding:6px 9px}
+    #sound{right:12px;top:12px;width:38px;height:38px;font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="sun"></div>
+  <div class="layer" id="cloudsFar"></div>
+  <div class="layer" id="cloudsNear"></div>
+  <div class="layer" id="hills"></div>
+  <div class="layer" id="bushes"></div>
+  <div id="ground"></div>
+
+  <div id="speedlines"></div>
+  <div id="props"></div>
+  <div id="coins"></div>
+
+  <div id="shadow"></div>
+  <div id="rider"></div>
+
+  <div id="title">SUPER MARIO · CYCLING</div>
+
+  <div id="hud">
+    <div class="chip"><span class="ci"></span>金币 <b id="coinCount">0</b></div>
+    <div class="chip">时速 <b id="kmh">0</b> km/h</div>
+    <div class="chip">里程 <b id="dist">0</b> m</div>
+  </div>
+
+  <button id="sound" title="音效开关">🔊</button>
+
+  <div id="hint">按住 → 加速 · ← 减速 · 空格 跳跃</div>
+  <div id="controls">
+    <button data-k="left">◀ 减速</button>
+    <button data-k="jump">跳跃 ␣</button>
+    <button data-k="right">加速 ▶</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   0. 配置与工具
+   ===================================================================== */
+const $  = (s, r=document) => r.querySelector(s);
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+const rnd = (a,b) => a + Math.random()*(b-a);
+
+const Q = new URLSearchParams(location.search);
+const FREEZE = Q.has('freeze');                       // ?freeze=1 冻结动画（用于截图自检）
+const FORCE_CRANK = Q.has('crank') ? parseFloat(Q.get('crank')) : null;
+const DEMO = Q.has('demo');                           // ?demo=1 自动加速+跳跃（演示/自检）
+const SIM  = Q.has('sim') ? parseFloat(Q.get('sim')) : 0;  // ?sim=3 先快进 N 秒（自检用）
+
+// 骑手坐标系（SVG viewBox 单位，1 单位 ≈ 车体 1 像素）
+const G = {
+  W: 168, H: 120,
+  groundY: 112,          // 地面接触线
+  wheelR: 18,
+  rear:  {x: 34,  y: 94},
+  front: {x: 126, y: 94},
+  bb:    {x: 78,  y: 94},   // 五通（曲柄中心）
+  crankR: 7.5,
+  hip:   {x: 67,  y: 63},   // 髋关节
+  L1: 22.5, L2: 21.5,       // 大腿 / 小腿
+  lean: 22                  // 上半身前倾角度
+};
+
+const CFG = {
+  cruise: 330, boost: 730, brake: 95,   // 目标速度（屏幕像素/秒）
+  accel: 2.6,
+  gravity: 2050, jumpV: 640,
+  crankRatio: 0.62                      // 踏频与轮速的比例（视觉手感）
+};
+
+/* =====================================================================
+   1. 音效（首次交互后生效，失败静默）
+   ===================================================================== */
+let actx = null, soundOn = true;
+function beep(freq, dur, type='square', vol=0.05, target=0){
+  if(!soundOn) return;
+  try{
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if(target) o.frequency.exponentialRampToValueAtTime(Math.max(60,target), t+dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t+dur+0.03);
+  }catch(e){/* 忽略 */}
+}
+const sfxCoin = () => { beep(988,0.06,'square',0.05); setTimeout(()=>beep(1319,0.16,'square',0.05),55); };
+const sfxJump = () => beep(300,0.16,'square',0.045,760);
+const sfxLand = () => beep(150,0.09,'triangle',0.05,80);
+
+// 首次交互时解锁音频（浏览器策略要求用户手势）
+function unlockAudio(){
+  try{
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+  }catch(e){/* 忽略 */}
+}
+addEventListener('pointerdown', unlockAudio, {once:true});
+addEventListener('keydown', unlockAudio, {once:true});
+
+/* =====================================================================
+   2. 骑手 SVG（结构固定，运行时更新曲柄/膝/轮组的变换）
+   ===================================================================== */
+const RIDER_SVG = `
+<svg id="riderSvg" viewBox="0 0 ${G.W} ${G.H}" xmlns="http://www.w3.org/2000/svg">
+  <!-- 后轮 -->
+  <g>
+    <circle cx="34" cy="94" r="18" fill="none" stroke="#221f1e" stroke-width="5.5"/>
+    <g id="spokesRear" stroke="#c9c9c9" stroke-width="1.4" stroke-linecap="round" transform="rotate(0 34 94)">
+      <line x1="34" y1="77.5" x2="34" y2="110.5"/>
+      <line x1="17.5" y1="94" x2="50.5" y2="94"/>
+      <line x1="22.3" y1="82.3" x2="45.7" y2="105.7"/>
+      <line x1="22.3" y1="105.7" x2="45.7" y2="82.3"/>
+    </g>
+    <circle cx="34" cy="94" r="3.2" fill="#9a9a9a"/>
+  </g>
+
+  <!-- 前轮 -->
+  <g>
+    <circle cx="126" cy="94" r="18" fill="none" stroke="#221f1e" stroke-width="5.5"/>
+    <g id="spokesFront" stroke="#c9c9c9" stroke-width="1.4" stroke-linecap="round" transform="rotate(0 126 94)">
+      <line x1="126" y1="77.5" x2="126" y2="110.5"/>
+      <line x1="109.5" y1="94" x2="142.5" y2="94"/>
+      <line x1="114.3" y1="82.3" x2="137.7" y2="105.7"/>
+      <line x1="114.3" y1="105.7" x2="137.7" y2="82.3"/>
+    </g>
+    <circle cx="126" cy="94" r="3.2" fill="#9a9a9a"/>
+  </g>
+
+  <!-- 远侧手臂（藏在身体后） -->
+  <path d="M78,46 Q88,44.5 96,49.5" fill="none" stroke="#a01a12" stroke-width="6" stroke-linecap="round"/>
+  <rect x="91.5" y="46.6" width="8" height="6.4" rx="3.1" fill="#d6d6d6"/>
+
+  <!-- 车架 -->
+  <g fill="none" stroke="#3c4a55" stroke-width="4.4" stroke-linecap="round">
+    <path d="M78,94 L34,94"/>
+    <path d="M78,94 L64,68"/>
+    <path d="M64,68 L34,94"/>
+    <path d="M64,68 L105,57"/>
+    <path d="M78,94 L105,57"/>
+    <path d="M106,56 L126,94"/>
+    <path d="M105.5,57 L105,51.5"/>
+    <path d="M96,51.5 L114,51.5"/>
+  </g>
+  <!-- 把套 / 车铃 -->
+  <rect x="95.5" y="49.3" width="9" height="4.4" rx="2.2" fill="#6b3a10"/>
+  <circle cx="110.5" cy="48.4" r="2.3" fill="#ffd23f" stroke="#a06000" stroke-width=".9"/>
+  <!-- 链条 + 牙盘 + 飞轮 -->
+  <g stroke="#8d8d8d" stroke-width="1.6" stroke-linecap="round" opacity=".9">
+    <line x1="78" y1="87.4" x2="34" y2="90.5"/>
+    <line x1="78" y1="100.6" x2="34" y2="97.6"/>
+  </g>
+  <circle cx="78" cy="94" r="6.6" fill="none" stroke="#9a9a9a" stroke-width="2"/>
+  <circle cx="34" cy="94" r="3.4" fill="none" stroke="#9a9a9a" stroke-width="1.6"/>
+  <!-- 车座 -->
+  <path d="M54,64.6 q6,-4.6 14,-4.1 q5,.4 5,3 q0,2.2 -4,2.6 l-11,.8 q-5,0 -4,-2.3 z" fill="#6b3a10"/>
+
+  <!-- 远侧曲柄 + 脚踏 -->
+  <g id="crankFar" transform="rotate(0 78 94)">
+    <line x1="78" y1="94" x2="78" y2="101.5" stroke="#6f7a83" stroke-width="3.2" stroke-linecap="round"/>
+    <rect x="73" y="99.6" width="10" height="3.4" rx="1.7" fill="#2b333a"/>
+  </g>
+
+  <!-- 远侧腿 -->
+  <g id="legBack">
+    <path id="thighBack" d="M67,63 L87,73" fill="none" stroke="#1c3aa8" stroke-width="8" stroke-linecap="round"/>
+    <path id="shinBack"  d="M87,73 L78,100" fill="none" stroke="#16308c" stroke-width="6.6" stroke-linecap="round"/>
+    <g id="shoeBack"><rect x="-6" y="-2.6" width="13" height="5.6" rx="2.6" fill="#5a2f0a"/></g>
+  </g>
+
+  <!-- 近侧曲柄 + 脚踏 -->
+  <g id="crankNear" transform="rotate(0 78 94)">
+    <line x1="78" y1="94" x2="78" y2="86.5" stroke="#8b959d" stroke-width="3.2" stroke-linecap="round"/>
+    <rect x="73" y="84.8" width="10" height="3.4" rx="1.7" fill="#39424a"/>
+  </g>
+
+  <!-- 近侧腿 -->
+  <g id="legFront">
+    <path id="thighFront" d="M67,63 L87,73" fill="none" stroke="#2a4fd8" stroke-width="8.6" stroke-linecap="round"/>
+    <path id="shinFront"  d="M87,73 L78,100" fill="none" stroke="#2446c4" stroke-width="7" stroke-linecap="round"/>
+    <g id="shoeFront"><rect x="-6.4" y="-2.8" width="14" height="6" rx="2.8" fill="#7a3f10"/></g>
+  </g>
+
+  <!-- 马力欧身体 -->
+  <g id="marioBody" transform="rotate(${G.lean} ${G.hip.x} ${G.hip.y})">
+    <rect x="58"   y="55"   width="18" height="12" rx="3"   fill="#2a4fd8"/>
+    <rect x="59"   y="41"   width="17" height="16" rx="3"   fill="#e52521"/>
+    <rect x="60"   y="44"   width="13" height="12" rx="2"   fill="#2a4fd8"/>
+    <rect x="60.5" y="38.5" width="4"  height="7"  rx="1.5" fill="#2a4fd8"/>
+    <rect x="68.5" y="38.5" width="4"  height="7"  rx="1.5" fill="#2a4fd8"/>
+    <rect x="62"   y="52.5" width="3"  height="3"  fill="#f7d038"/>
+    <rect x="69.5" y="52.5" width="3"  height="3"  fill="#f7d038"/>
+    <rect x="62"   y="25"   width="17" height="14" rx="2.5" fill="#f8b878"/>
+    <rect x="62"   y="28"   width="2.2" height="5.4" fill="#6b3a10"/>
+    <rect x="72.5" y="29"   width="3"  height="4"  rx="1"   fill="#26221f"/>
+    <rect x="79"   y="31"   width="4.5" height="4.5" rx="1.5" fill="#e79a5c"/>
+    <rect x="69"   y="34"   width="12" height="3"  rx="1.2" fill="#6b3a10"/>
+    <rect x="59.5" y="17.5" width="21" height="7.5" rx="2.5" fill="#e52521"/>
+    <rect x="78"   y="21"   width="9"  height="3.2" rx="1.4" fill="#e52521"/>
+    <circle cx="70" cy="21"  r="2.6" fill="#fff"/>
+  </g>
+
+  <!-- 近侧手臂 -->
+  <path d="M77,45.5 Q91,41.5 100,49.5" fill="none" stroke="#e52521" stroke-width="6.4" stroke-linecap="round"/>
+  <rect x="95" y="46.8" width="8.6" height="6.6" rx="3.2" fill="#f4f4f4"/>
+</svg>`;
+
+const riderEl = $('#rider');
+riderEl.innerHTML = RIDER_SVG;
+
+const R = {
+  spokesRear:  $('#spokesRear'),
+  spokesFront: $('#spokesFront'),
+  crankFar:    $('#crankFar'),
+  crankNear:   $('#crankNear'),
+  body:        $('#marioBody'),
+  thighBack:   $('#thighBack'), shinBack: $('#shinBack'), shoeBack: $('#shoeBack'),
+  thighFront:  $('#thighFront'), shinFront: $('#shinFront'), shoeFront: $('#shoeFront')
+};
+const shadowEl = $('#shadow');
+let shadowW = 0, shadowH = 0;
+
+/* ---- 两骨骼 IK：已知髋与脚，求膝 ---- */
+function knee(hip, foot, L1, L2){
+  let dx = foot.x-hip.x, dy = foot.y-hip.y;
+  const raw = Math.hypot(dx,dy) || 1e-6;
+  const d = clamp(raw, Math.abs(L1-L2)+0.001, L1+L2-0.001);
+  const ux = dx/raw, uy = dy/raw;
+  const a = (L1*L1 - L2*L2 + d*d) / (2*d);
+  const h = Math.sqrt(Math.max(0, L1*L1 - a*a));
+  const bx = hip.x + ux*a, by = hip.y + uy*a;
+  const k1 = {x: bx - uy*h, y: by + ux*h};
+  const k2 = {x: bx + uy*h, y: by - ux*h};
+  return (k1.x >= k2.x) ? k1 : k2;   // 膝盖朝前
+}
+const rot = (p, c, ang) => {
+  const s = Math.sin(ang), co = Math.cos(ang);
+  const dx = p.x-c.x, dy = p.y-c.y;
+  return {x: c.x + dx*co - dy*s, y: c.y + dx*s + dy*co};
+};
+
+/* =====================================================================
+   3. 状态
+   ===================================================================== */
+const S = {
+  v: 0, dist: 0, coins: 0,
+  crank: 0, wheel: 0, bob: 0,
+  hopY: 0, hopV: 0, air: false, tilt: 0,
+  keys: {left:false, right:false, jump:false}
+};
+let sc = 2;            // 骑手缩放（屏幕像素 / SVG 单位）
+let riderW = 0, riderH = 0, riderCX = 0, coinBaseY = 0, groundTop = 0;
+
+/* =====================================================================
+   4. 自适应布局
+   ===================================================================== */
+const layers = [
+  {el: $('#cloudsFar'),  k: .07, x: 0},
+  {el: $('#cloudsNear'), k: .16, x: 0},
+  {el: $('#hills'),      k: .30, x: 0},
+  {el: $('#bushes'),     k: .58, x: 0},
+  {el: $('#ground'),     k: 1.0, x: 0}
+];
+
+function layout(){
+  const W = innerWidth, H = innerHeight;
+  const gh = clamp(H*0.17, 96, 168);
+  document.documentElement.style.setProperty('--gh', gh+'px');
+  groundTop = H - gh;
+
+  riderW = clamp(W*0.29, 250, 430);
+  riderH = riderW * G.H / G.W;
+  sc = riderW / G.W;
+  riderEl.style.width  = riderW+'px';
+  riderEl.style.height = riderH+'px';
+  riderEl.style.left   = (W*0.32 - riderW*(80/G.W)) + 'px';
+  riderEl.style.bottom = (gh - riderH*(G.H-G.groundY)/G.H) + 'px';
+  riderCX = W*0.32;
+  coinBaseY = groundTop - (G.groundY - 46) * sc;   // 胸口高度
+
+  shadowW = riderW*0.76;
+  shadowH = Math.max(9, riderW*0.052);
+  shadowEl.style.width  = shadowW+'px';
+  shadowEl.style.height = shadowH+'px';
+
+  buildSpeedLines();
+
+  // 调试：?zoom=2 放大观察骑手（不影响正常使用）
+  if(Q.has('zoom')){
+    const st = $('#stage');
+    st.style.transformOrigin = `${riderCX}px ${groundTop}px`;
+    st.style.transform = `scale(${parseFloat(Q.get('zoom'))||2})`;
+  }
+}
+
+/* 速度线 */
+let linesBuilt = 0;
+function buildSpeedLines(){
+  const box = $('#speedlines');
+  const n = 14;
+  if(linesBuilt === n) return;
+  linesBuilt = n;
+  box.innerHTML = '';
+  for(let i=0;i<n;i++){
+    const s = document.createElement('span');
+    s.style.top = rnd(6, 88)+'%';
+    s.style.left = rnd(20, 105)+'%';
+    s.style.width = rnd(60, 190)+'px';
+    s.style.animationDuration = rnd(.24,.5)+'s';
+    s.style.animationDelay = (-rnd(0,.4))+'s';
+    s.style.opacity = .25 + Math.random()*.5;
+    box.appendChild(s);
+  }
+}
+
+/* =====================================================================
+   5. 场景道具（管道 / 砖块 / 问号块）
+   ===================================================================== */
+const props = [];
+const PROP_TYPES = {
+  pipe: (h) => `<svg viewBox="0 0 64 ${h}" width="${64*sc}" height="${h*sc}">
+      <rect x="5" y="14" width="54" height="${h-14}" fill="#2fa828" stroke="#0a5a10" stroke-width="3"/>
+      <rect x="0" y="0" width="64" height="18" fill="#3fc838" stroke="#0a5a10" stroke-width="3"/>
+      <rect x="9" y="20" width="9" height="${h-26}" fill="#8cf07c" opacity=".75"/>
+      <rect x="46" y="20" width="7" height="${h-26}" fill="#0d6a16" opacity=".5"/>
+    </svg>`,
+  brick: () => `<svg viewBox="0 0 24 24" width="${24*sc}" height="${24*sc}">
+      <rect width="24" height="24" fill="#c05028" stroke="#5a2408" stroke-width="2"/>
+      <path d="M0 8h24M0 16h24M12 0v8M6 8v8M18 8v8M12 16v8" stroke="#5a2408" stroke-width="2"/>
+    </svg>`,
+  qbox: () => `<svg viewBox="0 0 24 24" width="${24*sc}" height="${24*sc}">
+      <rect width="24" height="24" rx="2" fill="#f0a028" stroke="#7c4000" stroke-width="2"/>
+      <text x="12" y="17.5" font-size="16" font-weight="700" text-anchor="middle" fill="#7c4000"
+            font-family="monospace">?</text>
+      <circle cx="4" cy="4" r="1.4" fill="#7c4000"/><circle cx="20" cy="4" r="1.4" fill="#7c4000"/>
+      <circle cx="4" cy="20" r="1.4" fill="#7c4000"/><circle cx="20" cy="20" r="1.4" fill="#7c4000"/>
+    </svg>`
+};
+
+function addProp(kind, opt){
+  opt = opt || {};
+  const el = document.createElement('div');
+  el.className = 'prop';
+  let h = 0, y = 0;
+  if(kind === 'pipe'){
+    h = opt.h !== undefined ? opt.h : rnd(46, 92);
+    el.innerHTML = PROP_TYPES.pipe(h);
+    y = groundTop - h*sc + 2;
+  }else{
+    el.innerHTML = kind === 'brick' ? PROP_TYPES.brick() : PROP_TYPES.qbox();
+    h = 24*sc;
+    y = opt.y !== undefined ? opt.y : groundTop - rnd(1.05, 1.45) * riderH;
+    if(y < 54) y = 54;
+  }
+  const x = opt.x !== undefined ? opt.x : innerWidth + 60;
+  el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  $('#props').appendChild(el);
+  props.push({el, x, y, dead:false});
+}
+
+function updateProps(dt){
+  const dx = S.v*dt;
+  for(let i=props.length-1;i>=0;i--){
+    const p = props[i];
+    p.x -= dx;
+    p.el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+    if(p.x < -260){ p.el.remove(); props.splice(i,1); }
+  }
+}
+
+/* =====================================================================
+   6. 金币
+   ===================================================================== */
+const coins = [];
+const COIN = 32;
+
+function addCoin(x, y){
+  const el = document.createElement('div');
+  el.className = 'coin';
+  el.innerHTML = '<i></i>';
+  el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  $('#coins').appendChild(el);
+  coins.push({el, x, y, dead:false});
+}
+
+function spawnCoins(){
+  const x0 = innerWidth + 60;
+  if(Math.random() < 0.42){                       // 一串三枚（抛物线）
+    for(let i=0;i<3;i++) addCoin(x0 + i*46, coinBaseY - [0,26,0][i]);
+  }else{
+    addCoin(x0, coinBaseY - rnd(-58, 58));
+  }
+}
+
+function collect(c){
+  c.dead = true;
+  S.coins++;
+  sfxCoin();
+  const el = c.el;
+  el.style.setProperty('--x', c.x+'px');
+  el.style.setProperty('--y', c.y+'px');
+  el.classList.add('pop');
+  setTimeout(()=>el.remove(), 430);
+
+  const p = document.createElement('div');
+  p.className = 'plus';
+  p.textContent = '+1';
+  p.style.setProperty('--x', c.x+'px');
+  p.style.setProperty('--y', c.y+'px');
+  p.style.transform = `translate3d(${c.x}px, ${c.y}px, 0)`;
+  $('#coins').appendChild(p);
+  setTimeout(()=>p.remove(), 820);
+}
+
+function updateCoins(dt){
+  const dx = S.v*dt;
+  for(let i=coins.length-1;i>=0;i--){
+    const c = coins[i];
+    if(c.dead){ coins.splice(i,1); continue; }
+    c.x -= dx;
+    c.el.style.transform = `translate3d(${c.x}px, ${c.y}px, 0)`;
+    const cx = c.x + COIN/2, cy = c.y + COIN/2;
+    if(Math.abs(cx - riderCX) < 30 && Math.abs(cy - (coinBaseY + COIN/2)) < 46) collect(c);
+    if(c.x < -80){ c.el.remove(); coins.splice(i,1); }
+  }
+}
+
+/* 落地尘土 */
+function puff(){
+  for(let i=0;i<7;i++){
+    const d = document.createElement('div');
+    const size = rnd(6,16);
+    d.style.cssText = `position:absolute;z-index:4;border-radius:50%;
+      background:rgba(255,255,255,.72);pointer-events:none;
+      width:${size}px;height:${size}px;
+      left:${riderCX + rnd(-riderW*0.35, riderW*0.35)}px;
+      top:${groundTop - size/2}px;
+      transition:transform .5s ease-out, opacity .5s ease-out;`;
+    $('#coins').appendChild(d);
+    requestAnimationFrame(()=>{
+      d.style.transform = `translate(${rnd(-40,40)}px, ${-rnd(10,30)}px) scale(${rnd(1.4,2.2)})`;
+      d.style.opacity = '0';
+    });
+    setTimeout(()=>d.remove(), 560);
+  }
+}
+
+/* =====================================================================
+   7. 输入
+   ===================================================================== */
+const KEYMAP = {
+  ArrowRight:'right', d:'right', D:'right',
+  ArrowLeft:'left',   a:'left',  A:'left',
+  ' ':'jump', ArrowUp:'jump', w:'jump', W:'jump'
+};
+addEventListener('keydown', e=>{
+  const k = KEYMAP[e.key];
+  if(!k) return;
+  if(e.key === ' ' || e.key.startsWith('Arrow')) e.preventDefault();
+  if(k === 'jump' && !S.keys.jump) tryJump();
+  S.keys[k] = true; syncBtns();
+});
+addEventListener('keyup', e=>{
+  const k = KEYMAP[e.key];
+  if(!k) return;
+  S.keys[k] = false; syncBtns();
+});
+addEventListener('blur', ()=>{ S.keys.left=S.keys.right=S.keys.jump=false; syncBtns(); });
+
+function tryJump(){
+  if(S.air) return;
+  S.air = true; S.hopV = -CFG.jumpV; sfxJump();
+}
+
+document.querySelectorAll('#controls button').forEach(b=>{
+  const k = b.dataset.k;
+  const on  = e=>{ e.preventDefault(); if(k==='jump') tryJump(); S.keys[k]=true;  b.classList.add('on'); };
+  const off = e=>{ e.preventDefault(); S.keys[k]=false; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', on);
+  b.addEventListener('pointerup', off);
+  b.addEventListener('pointerleave', off);
+  b.addEventListener('pointercancel', off);
+});
+function syncBtns(){
+  document.querySelectorAll('#controls button').forEach(b=>{
+    b.classList.toggle('on', !!S.keys[b.dataset.k]);
+  });
+}
+
+const soundBtn = $('#sound');
+soundBtn.addEventListener('click', ()=>{
+  soundOn = !soundOn;
+  soundBtn.textContent = soundOn ? '🔊' : '🔇';
+  soundBtn.style.opacity = soundOn ? 1 : .6;
+});
+
+/* =====================================================================
+   8. 主循环
+   ===================================================================== */
+let last = performance.now();
+let spawnAcc = 0, propAcc = 0, hudTick = 0, demoT = 0;
+
+function step(now){
+  let dt = (now - last)/1000;
+  last = now;
+  dt = clamp(dt, 0, 0.05);
+  if(FREEZE) dt = 0;
+
+  update(dt);
+  requestAnimationFrame(step);
+}
+
+function update(dt){
+  /* --- 演示模式 --- */
+  if(DEMO){
+    S.keys.right = true;
+    demoT += dt;
+    if(demoT > 1.5){ demoT = 0; tryJump(); }
+  }
+
+  /* --- 速度 --- */
+  const target = S.keys.right ? CFG.boost : (S.keys.left ? CFG.brake : CFG.cruise);
+  S.v += (target - S.v) * clamp(dt*CFG.accel, 0, 1);
+
+  /* --- 跳跃 --- */
+  if(S.air){
+    S.hopV += CFG.gravity*dt;
+    S.hopY -= S.hopV*dt;              // hopY 向上为正
+    if(S.hopY <= 0){
+      S.hopY = 0; S.hopV = 0; S.air = false; puff(); sfxLand();
+    }
+  }
+  S.tilt = clamp(S.air ? (S.hopV/CFG.jumpV)*7 : 0, -9, 9);
+
+  /* --- 曲柄 / 车轮 --- */
+  const wheelPx = G.wheelR * sc;
+  S.wheel += (S.v / wheelPx) * dt;
+  if(S.air) S.crank += 1.1*dt; else S.crank += clamp((S.v/wheelPx)*CFG.crankRatio, 0, 15)*dt;
+  S.bob = Math.sin(S.crank*2) * 1.1;
+  if(FORCE_CRANK !== null) S.crank = FORCE_CRANK;
+
+  /* --- 视差背景 --- */
+  for(const L of layers){
+    L.x -= S.v * L.k * dt;
+    L.el.style.backgroundPositionX = L.x.toFixed(1)+'px';
+  }
+
+  /* --- 骑手姿态 --- */
+  const th = S.crank;
+  const footNear = rot({x: G.bb.x, y: G.bb.y - G.crankR}, G.bb, th);
+  const footFar  = rot({x: G.bb.x, y: G.bb.y + G.crankR}, G.bb, th);
+  pose(R.thighFront, R.shinFront, R.shoeFront, footNear, th, false);
+  pose(R.thighBack,  R.shinBack,  R.shoeBack,  footFar,  th, true);
+
+  R.crankNear.setAttribute('transform', `rotate(${th*180/Math.PI} 78 94)`);
+  R.crankFar .setAttribute('transform', `rotate(${th*180/Math.PI} 78 94)`);
+  R.spokesRear .setAttribute('transform', `rotate(${S.wheel*180/Math.PI} 34 94)`);
+  R.spokesFront.setAttribute('transform', `rotate(${S.wheel*180/Math.PI} 126 94)`);
+  R.body.setAttribute('transform', `translate(0 ${S.bob.toFixed(2)}) rotate(${G.lean} 67 63)`);
+
+  const shrink = 1 - clamp(S.hopY/(riderH*0.75), 0, .5);
+  shadowEl.style.transform =
+    `translate3d(${(riderCX - shadowW/2).toFixed(1)}px, ${(groundTop - shadowH*0.5).toFixed(1)}px, 0)` +
+    ` scale(${shrink.toFixed(3)}, ${shrink.toFixed(3)})`;
+  shadowEl.style.opacity = (.55 + .45*shrink).toFixed(2);
+
+  riderEl.style.transform =
+    `translate3d(0, ${(-S.hopY).toFixed(2)}px, 0) rotate(${S.tilt.toFixed(2)}deg)`;
+
+  /* --- 速度线 --- */
+  $('#speedlines').style.opacity = clamp((S.v - 520)/240, 0, 1).toFixed(2);
+
+  /* --- 场景 --- */
+  if(!FREEZE){
+    spawnAcc += S.v*dt;
+    if(spawnAcc > rnd(300, 520)){ spawnAcc = 0; spawnCoins(); }
+    propAcc += S.v*dt;
+    if(propAcc > rnd(420, 780)){
+      propAcc = 0;
+      addProp(Math.random() < .35 ? 'pipe' : (Math.random() < .5 ? 'brick' : 'qbox'));
+    }
+  }
+  updateCoins(dt);
+  updateProps(dt);
+
+  /* --- 里程 / HUD --- */
+  S.dist += S.v*dt;
+  hudTick += dt;
+  if(hudTick > 0.12){
+    hudTick = 0;
+    const pxPerM = sc*20;
+    $('#kmh').textContent  = Math.round(S.v/pxPerM*3.6);
+    $('#dist').textContent = Math.round(S.dist/pxPerM);
+    $('#coinCount').textContent = S.coins;
+  }
+}
+
+/* 摆腿 */
+function pose(thighEl, shinEl, shoeEl, foot, crankAng, far){
+  const k = knee(G.hip, foot, G.L1, G.L2);
+  thighEl.setAttribute('d', `M${G.hip.x},${G.hip.y} L${k.x.toFixed(1)},${k.y.toFixed(1)}`);
+  shinEl .setAttribute('d', `M${k.x.toFixed(1)},${k.y.toFixed(1)} L${foot.x.toFixed(1)},${foot.y.toFixed(1)}`);
+  shoeEl.setAttribute('transform',
+    `translate(${foot.x.toFixed(1)} ${foot.y.toFixed(1)}) rotate(${(Math.sin(crankAng)*(far?2.5:3.5)).toFixed(1)})`);
+}
+
+/* =====================================================================
+   9. 启动
+   ===================================================================== */
+addEventListener('resize', layout);
+document.addEventListener('visibilitychange', ()=>{ last = performance.now(); });
+
+layout();
+S.crank = 0.6;
+// 预填一些道具，开场就有景（位置用整数坐标，避免浮空/错位）
+addProp('pipe',  {x: innerWidth*0.72, h: 62});
+addProp('qbox',  {x: innerWidth*0.88, y: groundTop - 1.25*riderH});
+addCoin(innerWidth*0.70, coinBaseY - 20);
+addCoin(innerWidth*0.84, coinBaseY + 4);
+
+// ?sim=N：用固定步长先跑 N 秒，得到可复现的画面（截图自检用）
+if(SIM > 0){ for(let t = 0; t < SIM; t += 1/60) update(1/60); }
+
+requestAnimationFrame(now=>{ last = now; step(now); });
+})();
+</script>
+</body>
+</html>

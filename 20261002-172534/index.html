@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>鹈鹕的海岸骑行</title>
+  <style>
+    :root {
+      --speed: 1;
+      --sky-top: #72d9f7;
+      --sky-bottom: #dff8ef;
+      --sun: #ffe273;
+      --sea: #46b9cc;
+      --road: #475866;
+      --ink: #263944;
+      --feather: #fff8e6;
+      --wing: #f2dfbd;
+      --beak: #f3a438;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: ui-rounded, "SF Pro Rounded", "PingFang SC", system-ui, sans-serif;
+      background: var(--sky-top);
+    }
+
+    .scene {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-height: 560px;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(var(--sky-top), var(--sky-bottom) 66%);
+      transition: background 1.2s ease;
+    }
+
+    .scene.night {
+      --sky-top: #15284c;
+      --sky-bottom: #765b83;
+      --sun: #f4f0d1;
+      --sea: #285a76;
+      --road: #27333f;
+    }
+
+    .title {
+      position: absolute;
+      z-index: 20;
+      top: 7%;
+      left: 8%;
+      margin: 0;
+      color: white;
+      font-size: clamp(28px, 5vw, 72px);
+      line-height: .95;
+      letter-spacing: -.05em;
+      text-shadow: 0 5px 20px #25506b40;
+      user-select: none;
+    }
+
+    .title small {
+      display: block;
+      margin: 14px 0 0 4px;
+      font-size: clamp(12px, 1.1vw, 17px);
+      letter-spacing: .22em;
+      font-weight: 700;
+      opacity: .78;
+    }
+
+    .controls {
+      position: absolute;
+      z-index: 30;
+      top: 6%;
+      right: 5%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid #ffffff80;
+      border-radius: 999px;
+      background: #ffffff35;
+      box-shadow: 0 10px 30px #23516b22;
+      backdrop-filter: blur(10px);
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: var(--ink);
+      background: #fffdf0;
+      font: 700 13px/1 inherit;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #b8a982;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 5px 0 #b8a982; }
+    button:active { transform: translateY(2px); box-shadow: 0 1px 0 #b8a982; }
+
+    .sun {
+      position: absolute;
+      top: 13%;
+      right: 19%;
+      width: clamp(68px, 9vw, 132px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--sun);
+      box-shadow: 0 0 0 20px #fff4a426, 0 0 70px #fff19c90;
+      transition: background 1s ease, transform 1.2s ease;
+      animation: glow calc(3s / var(--speed)) ease-in-out infinite;
+    }
+
+    .night .sun { transform: translateY(-4vh); box-shadow: 0 0 40px #fffbdc88; }
+    .night .sun::after {
+      content: "";
+      position: absolute;
+      width: 19%; height: 19%;
+      top: 24%; left: 24%;
+      border-radius: 50%;
+      background: #d6d4c0;
+      box-shadow: 28px 31px 0 4px #d6d4c0, 50px 5px 0 -2px #d6d4c0;
+    }
+
+    .stars { position: absolute; inset: 0; opacity: 0; transition: opacity 1s; }
+    .night .stars { opacity: 1; }
+    .stars i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: white; animation: twinkle 2s infinite alternate; }
+
+    .cloud {
+      position: absolute;
+      z-index: 2;
+      width: 150px;
+      height: 35px;
+      border-radius: 50px;
+      background: #fff;
+      opacity: .76;
+      filter: drop-shadow(0 8px 8px #48788c18);
+      animation: drift calc(24s / var(--speed)) linear infinite;
+    }
+
+    .cloud::before, .cloud::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+    .cloud::before { width: 65px; height: 65px; left: 24px; bottom: 5px; }
+    .cloud::after { width: 82px; height: 82px; right: 19px; bottom: 0; }
+    .cloud.one { top: 28%; left: -180px; }
+    .cloud.two { top: 16%; left: -260px; scale: .6; animation-delay: -10s; }
+
+    .islands {
+      position: absolute;
+      z-index: 3;
+      bottom: 28%;
+      width: 100%; height: 15%;
+      background: #8ec9a1;
+      clip-path: polygon(0 86%, 8% 57%, 18% 70%, 31% 25%, 43% 78%, 57% 53%, 69% 73%, 81% 35%, 92% 69%, 100% 45%, 100% 100%, 0 100%);
+      opacity: .75;
+    }
+
+    .sea {
+      position: absolute;
+      z-index: 4;
+      left: 0; right: 0; bottom: 19%; height: 18%;
+      overflow: hidden;
+      background: var(--sea);
+      transition: background 1s ease;
+    }
+
+    .wave {
+      position: absolute;
+      left: -100%;
+      width: 300%;
+      height: 30px;
+      background: radial-gradient(30px 14px at 50% 100%, transparent 97%, #d9fbf588 100%) 0 0 / 60px 30px repeat-x;
+      animation: waves calc(7s / var(--speed)) linear infinite;
+    }
+    .wave:nth-child(2) { top: 45px; opacity: .5; animation-direction: reverse; animation-duration: calc(10s / var(--speed)); }
+
+    .road {
+      position: absolute;
+      z-index: 5;
+      left: 0; right: 0; bottom: 0; height: 22%;
+      background: var(--road);
+      border-top: 12px solid #e5c982;
+      transition: background 1s ease;
+    }
+
+    .road::after {
+      content: "";
+      position: absolute;
+      top: 57%; left: -20%; width: 140%; height: 7px;
+      background: repeating-linear-gradient(90deg, #f8e8af 0 80px, transparent 80px 145px);
+      animation: road calc(1.2s / var(--speed)) linear infinite;
+    }
+
+    .rider {
+      position: absolute;
+      z-index: 12;
+      left: 50%;
+      bottom: 10.5%;
+      width: 500px;
+      height: 430px;
+      transform: translateX(-50%);
+      transform-origin: 50% 100%;
+      animation: ride calc(.72s / var(--speed)) ease-in-out infinite alternate;
+    }
+
+    .rider svg { width: 100%; height: 100%; overflow: visible; }
+    .wheel { transform-box: fill-box; transform-origin: center; animation: spin calc(1s / var(--speed)) linear infinite; }
+    .pedal { transform-box: fill-box; transform-origin: center; animation: spin calc(1s / var(--speed)) linear infinite; }
+    .wing { transform-box: fill-box; transform-origin: 80% 70%; animation: wing calc(.8s / var(--speed)) ease-in-out infinite alternate; }
+    .head { transform-box: fill-box; transform-origin: 40% 90%; animation: head calc(1.4s / var(--speed)) ease-in-out infinite alternate; }
+    .scarf { transform-box: fill-box; transform-origin: left center; animation: scarf calc(.45s / var(--speed)) ease-in-out infinite alternate; }
+
+    .hint {
+      position: absolute;
+      z-index: 20;
+      left: 50%; bottom: 2.5%;
+      transform: translateX(-50%);
+      margin: 0;
+      color: #fff;
+      font-size: 12px;
+      letter-spacing: .08em;
+      opacity: .6;
+      white-space: nowrap;
+    }
+
+    @keyframes drift { to { transform: translateX(calc(100vw + 440px)); } }
+    @keyframes waves { to { transform: translateX(60px); } }
+    @keyframes road { to { transform: translateX(-145px); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes ride { to { transform: translateX(-50%) translateY(-7px) rotate(.35deg); } }
+    @keyframes wing { to { transform: rotate(-16deg) translateY(-5px); } }
+    @keyframes head { to { transform: rotate(3deg); } }
+    @keyframes scarf { to { transform: rotate(8deg) scaleX(.92); } }
+    @keyframes glow { 50% { scale: 1.05; } }
+    @keyframes twinkle { to { opacity: .2; scale: .5; } }
+
+    @media (max-width: 650px) {
+      .rider { width: 390px; height: 335px; bottom: 13%; }
+      .title { top: 6%; }
+      .title small { max-width: 180px; line-height: 1.6; }
+      .controls { top: auto; right: 4%; bottom: 4%; }
+      .hint { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene" id="scene">
+    <h1 class="title">向着海风<br>骑呀骑<small>PELICAN COASTAL RIDE</small></h1>
+
+    <div class="controls" aria-label="动画控制">
+      <button id="speedBtn" type="button">加速 ×1</button>
+      <button id="skyBtn" type="button">切换夜晚</button>
+    </div>
+
+    <div class="stars" aria-hidden="true">
+      <i style="left:11%;top:22%"></i><i style="left:28%;top:13%;animation-delay:.4s"></i>
+      <i style="left:43%;top:25%;animation-delay:1s"></i><i style="left:59%;top:10%;animation-delay:.7s"></i>
+      <i style="left:72%;top:31%;animation-delay:1.3s"></i><i style="left:89%;top:15%;animation-delay:.2s"></i>
+    </div>
+    <div class="sun" aria-hidden="true"></div>
+    <div class="cloud one" aria-hidden="true"></div>
+    <div class="cloud two" aria-hidden="true"></div>
+    <div class="islands" aria-hidden="true"></div>
+    <div class="sea" aria-hidden="true"><div class="wave"></div><div class="wave"></div></div>
+    <div class="road" aria-hidden="true"></div>
+
+    <div class="rider" aria-label="一只鹈鹕正在骑自行车">
+      <svg viewBox="0 0 560 470" role="img" aria-labelledby="pelicanTitle">
+        <title id="pelicanTitle">骑自行车的鹈鹕</title>
+        <!-- wheels -->
+        <g class="wheel">
+          <circle cx="118" cy="378" r="78" fill="none" stroke="#1e3039" stroke-width="12"/>
+          <circle cx="118" cy="378" r="67" fill="none" stroke="#bfd7d9" stroke-width="3"/>
+          <g stroke="#bfd7d9" stroke-width="2"><path d="M118 311v134M51 378h134M71 331l94 94M71 425l94-94"/></g>
+          <circle cx="118" cy="378" r="7" fill="#f2aa3e"/>
+        </g>
+        <g class="wheel">
+          <circle cx="437" cy="378" r="78" fill="none" stroke="#1e3039" stroke-width="12"/>
+          <circle cx="437" cy="378" r="67" fill="none" stroke="#bfd7d9" stroke-width="3"/>
+          <g stroke="#bfd7d9" stroke-width="2"><path d="M437 311v134M370 378h134M390 331l94 94M390 425l94-94"/></g>
+          <circle cx="437" cy="378" r="7" fill="#f2aa3e"/>
+        </g>
+
+        <!-- bicycle frame -->
+        <g fill="none" stroke="#e34f45" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M118 378l83-105 70 105H118l48-105h118l-13 105 103-119 63 119"/>
+          <path d="M359 260h31M184 259h-42" stroke="#273b45" stroke-width="12"/>
+        </g>
+        <g class="pedal"><circle cx="271" cy="378" r="21" fill="#f9cb54" stroke="#263944" stroke-width="6"/><path d="M271 378l27 19" stroke="#263944" stroke-width="6"/><circle cx="301" cy="399" r="7" fill="#263944"/></g>
+
+        <!-- pelican body -->
+        <path d="M174 267c-5-82 34-159 111-164 74-4 111 62 90 135-12 40-47 68-93 67-53-1-91-5-108-38z" fill="var(--feather)" stroke="#263944" stroke-width="7"/>
+        <path d="M181 252c-28 21-50 49-63 76" fill="none" stroke="#f1dfbd" stroke-width="18" stroke-linecap="round"/>
+        <path d="M343 245c31 18 54 35 72 51" fill="none" stroke="#f1dfbd" stroke-width="18" stroke-linecap="round"/>
+        <path class="wing" d="M228 181c-38 31-39 83 12 104 37 15 76-5 90-58-30 21-60 15-102-46z" fill="var(--wing)" stroke="#263944" stroke-width="7"/>
+
+        <!-- legs -->
+        <path d="M231 290c14 30 35 51 66 86M306 288c7 37 0 71-8 109" fill="none" stroke="#e9a13d" stroke-width="16" stroke-linecap="round"/>
+        <path d="M284 390l27 15M286 407l25-2" fill="none" stroke="#263944" stroke-width="8" stroke-linecap="round"/>
+
+        <!-- head and beak -->
+        <g class="head">
+          <path d="M252 134c-14-60 11-111 61-117 53-6 85 36 72 87-8 32-26 57-54 71z" fill="var(--feather)" stroke="#263944" stroke-width="7"/>
+          <path d="M345 79c50-18 116-18 158 4-40 23-91 37-151 45-22 3-31-35-7-49z" fill="var(--beak)" stroke="#263944" stroke-width="7" stroke-linejoin="round"/>
+          <path d="M348 112c39 5 91-7 155-29-12 51-83 76-143 59z" fill="#f8bd55" stroke="#263944" stroke-width="6" stroke-linejoin="round"/>
+          <circle cx="345" cy="62" r="10" fill="#263944"/><circle cx="342" cy="59" r="3" fill="white"/>
+          <path d="M300 32c-9-18-4-28 10-31M322 28c0-17 8-25 21-25" fill="none" stroke="#263944" stroke-width="6" stroke-linecap="round"/>
+        </g>
+
+        <!-- scarf -->
+        <path d="M277 153c28 16 65 19 93-1" fill="none" stroke="#e34f45" stroke-width="14" stroke-linecap="round"/>
+        <path class="scarf" d="M287 160c-40 7-76 3-112-16 24 34 59 51 101 45z" fill="#e34f45" stroke="#263944" stroke-width="5"/>
+      </svg>
+    </div>
+
+    <p class="hint">点击按钮，陪鹈鹕骑得更快一些</p>
+  </main>
+
+  <script>
+    const scene = document.querySelector('#scene');
+    const speedBtn = document.querySelector('#speedBtn');
+    const skyBtn = document.querySelector('#skyBtn');
+    const speeds = [1, 1.6, 2.3];
+    let speedIndex = 0;
+
+    speedBtn.addEventListener('click', () => {
+      speedIndex = (speedIndex + 1) % speeds.length;
+      const speed = speeds[speedIndex];
+      document.documentElement.style.setProperty('--speed', speed);
+      speedBtn.textContent = speedIndex === 0 ? '加速 ×1' : `速度 ×${speed}`;
+    });
+
+    skyBtn.addEventListener('click', () => {
+      const isNight = scene.classList.toggle('night');
+      skyBtn.textContent = isNight ? '切换白天' : '切换夜晚';
+    });
+  </script>
+</body>
+</html>

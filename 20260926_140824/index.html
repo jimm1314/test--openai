@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>鹈鹕骑自行车 🚲</title>
+<style>
+  :root {
+    --sky-top: #7ec8f7;
+    --sky-bottom: #d9f2ff;
+    --ground: #8fd06a;
+    --ground-dark: #6ab04c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(var(--sky-top), var(--sky-bottom));
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+
+  .scene {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ---------- 天空元素 ---------- */
+  .sun {
+    position: absolute;
+    top: 8%;
+    right: 12%;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff7b0, #ffd93d 60%, #ffb703);
+    box-shadow: 0 0 60px 25px rgba(255, 217, 61, 0.45);
+    animation: sunGlow 4s ease-in-out infinite;
+  }
+  @keyframes sunGlow {
+    0%, 100% { box-shadow: 0 0 60px 25px rgba(255, 217, 61, 0.45); }
+    50%      { box-shadow: 0 0 90px 40px rgba(255, 217, 61, 0.65); }
+  }
+
+  .cloud {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50px;
+    opacity: 0.9;
+    animation: cloudDrift linear infinite;
+  }
+  .cloud::before,
+  .cloud::after {
+    content: "";
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50%;
+  }
+  .cloud-1 {
+    width: 160px; height: 55px; top: 16%; left: -220px;
+    animation-duration: 38s;
+  }
+  .cloud-1::before { width: 70px; height: 70px; top: -32px; left: 30px; }
+  .cloud-1::after  { width: 55px; height: 55px; top: -22px; left: 85px; }
+
+  .cloud-2 {
+    width: 130px; height: 45px; top: 30%; left: -200px;
+    animation-duration: 52s;
+    animation-delay: -20s;
+  }
+  .cloud-2::before { width: 60px; height: 60px; top: -28px; left: 25px; }
+  .cloud-2::after  { width: 45px; height: 45px; top: -20px; left: 70px; }
+
+  .cloud-3 {
+    width: 110px; height: 40px; top: 9%; left: -160px;
+    animation-duration: 46s;
+    animation-delay: -32s;
+  }
+  .cloud-3::before { width: 50px; height: 50px; top: -24px; left: 20px; }
+  .cloud-3::after  { width: 38px; height: 38px; top: -16px; left: 60px; }
+
+  @keyframes cloudDrift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(100vw + 260px)); }
+  }
+
+  /* ---------- 地面 ---------- */
+  .ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 26%;
+    background: linear-gradient(var(--ground), var(--ground-dark));
+  }
+  .ground::before {
+    content: "";
+    position: absolute;
+    top: -14px;
+    left: 0;
+    width: 100%;
+    height: 28px;
+    background: radial-gradient(circle at 10px 10px, var(--ground) 12px, transparent 13px);
+    background-size: 46px 28px;
+  }
+
+  /* ---------- 骑车主体 ---------- */
+  .rider-wrap {
+    position: absolute;
+    left: 0;
+    bottom: 24%;
+    animation: rideAcross 16s linear infinite;
+  }
+  @keyframes rideAcross {
+    from { transform: translateX(-260px); }
+    to   { transform: translateX(calc(100vw + 260px)); }
+  }
+
+  .bike-scene {
+    position: relative;
+    width: 320px;
+    height: 300px;
+  }
+
+  .bike-scene svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  /* 身体轻微上下颠簸 */
+  .bob {
+    animation: bob 0.5s ease-in-out infinite;
+    transform-origin: 50% 90%;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+  }
+
+  /* 轮子旋转 */
+  .wheel {
+    transform-origin: 50% 50%;
+    animation: spin 0.55s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* 脚踏 / 曲柄 */
+  .crank {
+    transform-origin: 50% 50%;
+    animation: spin 0.55s linear infinite;
+  }
+
+  /* 腿部蹬踏 */
+  .leg-top {
+    animation: pedalLeg 0.55s linear infinite;
+    transform-origin: top center;
+  }
+  @keyframes pedalLeg {
+    0%, 100% { transform: rotate(-38deg); }
+    50%      { transform: rotate(34deg); }
+  }
+
+  /* 翅膀扇动 */
+  .wing {
+    transform-origin: top left;
+    animation: flap 0.8s ease-in-out infinite;
+  }
+  @keyframes flap {
+    0%, 100% { transform: rotate(12deg); }
+    50%      { transform: rotate(-26deg); }
+  }
+
+  /* 尾巴摆动 */
+  .tail {
+    transform-origin: left center;
+    animation: tailWag 0.8s ease-in-out infinite;
+  }
+  @keyframes tailWag {
+    0%, 100% { transform: rotate(4deg); }
+    50%      { transform: rotate(-8deg); }
+  }
+
+  /* 头部点动 */
+  .head {
+    transform-origin: bottom center;
+    animation: nod 0.55s ease-in-out infinite;
+  }
+  @keyframes nod {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(5deg); }
+  }
+
+  /* 眨眼 */
+  .blink {
+    animation: blink 3.6s infinite;
+  }
+  @keyframes blink {
+    0%, 93%, 100% { transform: scaleY(1); }
+    95%           { transform: scaleY(0.08); }
+    98%           { transform: scaleY(1); }
+  }
+
+  /* ---------- 字幕 ---------- */
+  .caption {
+    position: absolute;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.82);
+    color: #2f5d50;
+    padding: 12px 28px;
+    border-radius: 999px;
+    font-size: clamp(16px, 2.4vw, 26px);
+    font-weight: 700;
+    letter-spacing: 2px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+    animation: captionBounce 1.6s ease-in-out infinite;
+  }
+  @keyframes captionBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-8px); }
+  }
+</style>
+</head>
+<body>
+  <div class="scene">
+    <div class="sun"></div>
+    <div class="cloud cloud-1"></div>
+    <div class="cloud cloud-2"></div>
+    <div class="cloud cloud-3"></div>
+
+    <div class="rider-wrap">
+      <div class="bike-scene">
+        <svg viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- 自行车 -->
+          <g class="bob">
+            <!-- 后轮 -->
+            <g class="wheel" transform="translate(82, 230)">
+              <circle r="46" fill="none" stroke="#3a3f4a" stroke-width="7" />
+              <circle r="8" fill="#3a3f4a" />
+              <g stroke="#3a3f4a" stroke-width="2.5">
+                <line x1="0" y1="0" x2="0" y2="-46" />
+                <line x1="0" y1="0" x2="46" y2="0" />
+                <line x1="0" y1="0" x2="0" y2="46" />
+                <line x1="0" y1="0" x2="-46" y2="0" />
+                <line x1="0" y1="0" x2="32.5" y2="-32.5" />
+                <line x1="0" y1="0" x2="32.5" y2="32.5" />
+                <line x1="0" y1="0" x2="-32.5" y2="32.5" />
+                <line x1="0" y1="0" x2="-32.5" y2="-32.5" />
+              </g>
+            </g>
+
+            <!-- 前轮 -->
+            <g class="wheel" transform="translate(238, 230)">
+              <circle r="46" fill="none" stroke="#3a3f4a" stroke-width="7" />
+              <circle r="8" fill="#3a3f4a" />
+              <g stroke="#3a3f4a" stroke-width="2.5">
+                <line x1="0" y1="0" x2="0" y2="-46" />
+                <line x1="0" y1="0" x2="46" y2="0" />
+                <line x1="0" y1="0" x2="0" y2="46" />
+                <line x1="0" y1="0" x2="-46" y2="0" />
+                <line x1="0" y1="0" x2="32.5" y2="-32.5" />
+                <line x1="0" y1="0" x2="32.5" y2="32.5" />
+                <line x1="0" y1="0" x2="-32.5" y2="32.5" />
+                <line x1="0" y1="0" x2="-32.5" y2="-32.5" />
+              </g>
+            </g>
+
+            <!-- 车架 -->
+            <g fill="none" stroke="#e74c3c" stroke-width="7" stroke-linecap="round">
+              <!-- 后三角 -->
+              <line x1="82" y1="230" x2="140" y2="170" />
+              <line x1="82" y1="230" x2="140" y2="208" />
+              <line x1="140" y1="170" x2="140" y2="208" />
+              <!-- 主梁 -->
+              <line x1="140" y1="170" x2="200" y2="165" />
+              <!-- 下梁 -->
+              <line x1="140" y1="208" x2="200" y2="205" />
+              <!-- 前叉 -->
+              <line x1="238" y1="230" x2="200" y2="165" />
+              <!-- 座管 -->
+              <line x1="140" y1="170" x2="150" y2="130" />
+              <!-- 车把立管 -->
+              <line x1="200" y1="165" x2="210" y2="120" />
+            </g>
+
+            <!-- 车座 -->
+            <g>
+              <rect x="138" y="118" width="30" height="9" rx="5" fill="#2c3e50" />
+              <line x1="153" y1="127" x2="150" y2="136" stroke="#2c3e50" stroke-width="5" />
+            </g>
+
+            <!-- 车把 -->
+            <g fill="none" stroke="#2c3e50" stroke-width="6" stroke-linecap="round">
+              <line x1="210" y1="120" x2="232" y2="104" />
+              <line x1="232" y1="104" x2="226" y2="118" />
+              <line x1="210" y1="120" x2="226" y2="118" />
+            </g>
+
+            <!-- 曲柄 + 脚踏 -->
+            <g class="crank">
+              <line x1="140" y1="208" x2="140" y2="208" stroke="#3a3f4a" stroke-width="0" />
+            </g>
+            <g class="crank" transform="translate(140, 208)">
+              <line x1="0" y1="0" x2="0" y2="-24" stroke="#3a3f4a" stroke-width="5" />
+              <line x1="0" y1="0" x2="0" y2="24" stroke="#3a3f4a" stroke-width="5" />
+              <rect x="-7" y="-30" width="14" height="6" rx="2" fill="#e67e22" />
+              <rect x="-7" y="24" width="14" height="6" rx="2" fill="#e67e22" />
+            </g>
+
+            <!-- ===== 鹈鹕 ===== -->
+            <g class="bob">
+              <!-- 腿 -->
+              <g stroke="#f39c12" stroke-width="6" stroke-linecap="round">
+                <g class="leg-top" style="transform-origin:150px 150px;">
+                  <line x1="150" y1="150" x2="140" y2="182" />
+                </g>
+                <g class="leg-top" style="transform-origin:150px 150px; animation-delay:0.275s;">
+                  <line x1="150" y1="150" x2="160" y2="214" />
+                </g>
+              </g>
+
+              <!-- 身体 -->
+              <ellipse cx="150" cy="125" rx="46" ry="34" fill="#fff7f0" stroke="#e8d5c8" stroke-width="2" />
+
+              <!-- 尾巴 -->
+              <g class="tail" style="transform-origin:108px 128px;">
+                <path d="M112 128 L86 112 L92 130 L82 142 Z" fill="#f4e9df" stroke="#e0cec0" stroke-width="2" />
+              </g>
+
+              <!-- 翅膀 -->
+              <g class="wing" style="transform-origin:160px 118px;">
+                <path d="M160 116 Q 196 96 214 116 Q 196 138 166 138 Z" fill="#f4e9df" stroke="#e0cec0" stroke-width="2" />
+              </g>
+
+              <!-- 脖子 + 头 -->
+              <g class="head" style="transform-origin:150px 120px;">
+                <path d="M132 104 Q 118 72 130 48 Q 140 30 152 42" fill="none" stroke="#fff7f0" stroke-width="24" stroke-linecap="round" />
+                <path d="M132 104 Q 118 72 130 48 Q 140 30 152 42" fill="none" stroke="#e8d5c8" stroke-width="25" stroke-linecap="round" opacity="0.25" />
+                <path d="M132 104 Q 118 72 130 48 Q 140 30 152 42" fill="none" stroke="#fff7f0" stroke-width="20" stroke-linecap="round" />
+                <ellipse cx="150" cy="40" rx="22" ry="18" fill="#fff7f0" stroke="#e8d5c8" stroke-width="2" />
+              </g>
+
+              <!-- 大嘴（鹈鹕的标志） -->
+              <g>
+                <path d="M158 36 Q 198 34 206 46 Q 190 52 162 48 Z" fill="#f7b731" stroke="#e0991f" stroke-width="2" />
+                <!-- 喉囊 -->
+                <path d="M170 46 Q 192 60 188 74 Q 178 76 164 62 Z" fill="#f5a623" stroke="#e0991f" stroke-width="2" />
+              </g>
+
+              <!-- 眼睛 -->
+              <g class="blink" style="transform-origin:150px 34px;">
+                <circle cx="150" cy="34" r="5.5" fill="#1f2937" />
+                <circle cx="152" cy="32" r="2" fill="#ffffff" />
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="ground"></div>
+    <div class="caption">鹈鹕骑车去兜风 🚲💨</div>
+  </div>
+</body>
+</html>
