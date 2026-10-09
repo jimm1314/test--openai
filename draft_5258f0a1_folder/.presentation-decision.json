@@ -1,0 +1,13 @@
+{
+  "audience": "零基础或刚接触容器技术、想自学 Docker 与 Kubernetes 的新手工程师",
+  "reader_task": "按教程从头学会 Docker 与 K8s 的核心概念并完成可验证的动手实操,之后作为速查手册检索命令与概念",
+  "genre_contract": "router.knowledge",
+  "adapter": null,
+  "presentation_mode": "rich",
+  "visual_plan": {
+    "reason": "容器与虚拟机对比、镜像分层、容器生命周期、K8s 集群架构、核心对象关系、滚动更新流程均属拓扑/层级/流程关系,图示能显著降低新手理解成本;命令、配置指令与概念对照用表格承载,关键提醒用高亮块",
+    "blocks": [
+      {"type": "whiteboard", "min_count": 8, "purpose": "分别呈现学习路线图、虚拟机vs容器对比、镜像-容器-仓库关系、镜像分层、容器生命周期、K8s 集群架构、Deployment/ReplicaSet/Pod/Service 关系、滚动更新流程"}
+    ]
+  }
+}

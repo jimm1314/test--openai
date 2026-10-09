@@ -1,0 +1,440 @@
+<title>Docker 与 Kubernetes(K8s)新手学习笔记</title>
+<h1 seq="auto">学前必读:这篇笔记怎么用</h1>
+<callout emoji="💡" background-color="light-blue"><p><b>这篇笔记适合你吗?</b></p><ul><li>适合:零基础、或只会一两条 docker 命令、想系统学会 Docker 和 K8s 的同学</li><li>目标:看懂核心概念 → 跟着动手跑通每个实验 → 之后把本文当速查手册用</li><li>前置要求:一台能安装 Docker 的电脑(macOS / Windows / Linux 均可),会用命令行复制粘贴命令</li></ul></callout>
+<p>全篇分为两大部分:<b>Docker 篇</b>讲清"容器"这一个技术,<b>Kubernetes 篇</b>讲清"管理成百上千个容器"这一套系统。每个实操小节都有明确的<b>验证步骤</b>,看到预期结果再往下走。</p>
+<p>整体学习路线如下,建议按顺序学习,不要跳:</p>
+<whiteboard type="mermaid">flowchart LR
+    A["① 认识 Docker 与容器"] --&gt; B["② 镜像与 Dockerfile"]
+    B --&gt; C["③ 容器管理、网络与数据卷"]
+    C --&gt; D["④ Docker Compose 多容器编排"]
+    D --&gt; E["⑤ K8s 架构与核心概念"]
+    E --&gt; F["⑥ K8s 实战、排错与速查"]
+</whiteboard>
+<callout emoji="🧭" background-color="light-green"><p>使用建议:第一遍<b>跟着做</b>,每个命令都亲手敲一遍;之后复习时直接看每张"速查表"。所有命令都在代码块里,可以直接复制。</p></callout>
+<h1 seq="auto">第一部分:Docker 篇</h1>
+<h2 seq="auto">Docker 是什么?为什么要学它</h2>
+<h3 seq="auto">先从一个痛点说起</h3>
+<p>你一定遇到过这种情况:代码在同事电脑上跑得好好的,拷到你机器上就报错——Python 版本不对、缺依赖、系统配置不一样……<b>"在我机器上明明能跑!"</b>是开发界最有名的甩锅语录。</p>
+<callout emoji="🚢" background-color="light-yellow"><p><b>类比:集装箱</b>。在集装箱发明之前,码头工人要逐件搬运形状各异的货物,效率极低。集装箱把一切货物装进标准箱子,船、火车、卡车都能直接运。<b>Docker 就是软件界的集装箱</b>:把应用和它需要的全部环境(依赖、配置)打进一个标准"箱子",在任何装了 Docker 的机器上都能原样运行。</p></callout>
+<h3 seq="auto">容器 vs 虚拟机</h3>
+<p>很多人会问:虚拟化不是早就有虚拟机(VM)了吗?区别在于<b>虚拟机虚拟的是硬件,容器共享的是操作系统内核</b>——所以容器不需要为每个应用背一套完整系统,天然更轻、更快:</p>
+<whiteboard type="mermaid">flowchart TB
+    subgraph VM["传统虚拟机:每个应用背着一个完整操作系统"]
+        A1["应用 A"] --&gt; G1["Guest OS 完整客户机系统"]
+        A2["应用 B"] --&gt; G2["Guest OS 完整客户机系统"]
+        G1 --&gt; HV["Hypervisor 虚拟化层"]
+        G2 --&gt; HV
+        HV --&gt; H1["宿主机操作系统"]
+        H1 --&gt; W1["服务器硬件"]
+    end
+    subgraph CT["Docker 容器:所有容器共享宿主机内核"]
+        B1["应用 A 加依赖"] --&gt; EN["Docker Engine"]
+        B2["应用 B 加依赖"] --&gt; EN
+        EN --&gt; H2["宿主机操作系统"]
+        H2 --&gt; W2["服务器硬件"]
+    end
+</whiteboard>
+<table><thead><tr><th background-color="light-gray"><p>对比项</p></th><th background-color="light-gray"><p>虚拟机 VM</p></th><th background-color="light-gray"><p>Docker 容器</p></th></tr></thead><tbody><tr><td><p>启动速度</p></td><td><p>分钟级</p></td><td><p>秒级甚至毫秒级</p></td></tr><tr><td><p>资源占用</p></td><td><p>每个都要一套完整系统,几个 GB 起步</p></td><td><p>共享宿主机内核,镜像通常 MB 级</p></td></tr><tr><td><p>隔离强度</p></td><td><p>硬件级隔离,更强</p></td><td><p>进程级隔离,日常够用</p></td></tr><tr><td><p>一台机器能跑多少</p></td><td><p>几个到十几个</p></td><td><p>几十到上百个</p></td></tr><tr><td><p>典型场景</p></td><td><p>需要强隔离、运行不同操作系统</p></td><td><p>应用打包交付、微服务、CI/CD</p></td></tr></tbody></table>
+<h3 seq="auto">三个核心概念:镜像、容器、仓库</h3>
+<p>Docker 世界只有三个核心概念,先记住这张表,后面所有命令都在围绕它们转:</p>
+<table><thead><tr><th background-color="light-gray"><p>概念</p></th><th background-color="light-gray"><p>类比</p></th><th background-color="light-gray"><p>一句话说明</p></th></tr></thead><tbody><tr><td><p><b>镜像 Image</b></p></td><td><p>安装包 / 蛋糕模具</p></td><td><p>只读模板,打包了应用和它的全部依赖</p></td></tr><tr><td><p><b>容器 Container</b></p></td><td><p>模具做出来的蛋糕</p></td><td><p>镜像跑起来之后的实例,可以启动、停止、删除,同一个镜像可以跑出很多个容器</p></td></tr><tr><td><p><b>仓库 Registry</b></p></td><td><p>应用商店</p></td><td><p>集中存放和分发镜像的地方,最常用的是 Docker Hub</p></td></tr></tbody></table>
+<whiteboard type="mermaid">flowchart LR
+    HUB["远程仓库 Registry 例如 Docker Hub"]
+    subgraph LOCAL["你的电脑"]
+        IMG["镜像 Image 只读模板"]
+        C1["容器 1 运行中的实例"]
+        C2["容器 2 运行中的实例"]
+        IMG --&gt;|docker run| C1
+        IMG --&gt;|docker run| C2
+    end
+    HUB --&gt;|docker pull 拉取| IMG
+    IMG --&gt;|docker push 推送| HUB
+</whiteboard>
+<callout emoji="📌" background-color="light-blue"><p>一句话串起来:从仓库<b>拉(pull)</b>下镜像,用镜像<b>跑(run)</b>出容器;反过来,环境调好后可以<b>打包(commit/build)</b>成新镜像,<b>推(push)</b>回仓库给别人用。</p></callout>
+<h2 seq="auto">安装 Docker(约 5 分钟)</h2>
+<table><thead><tr><th background-color="light-gray"><p>你的系统</p></th><th background-color="light-gray"><p>推荐方式</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead><tbody><tr><td><p>macOS</p></td><td><p>Docker Desktop for Mac</p></td><td><p>官网下载 dmg 安装包,拖进"应用程序"即可;注意区分 Intel 芯片和 Apple 芯片版本</p></td></tr><tr><td><p>Windows</p></td><td><p>Docker Desktop(基于 WSL2)</p></td><td><p>Win10/11 均可;安装时按提示开启 WSL2,装完需重启</p></td></tr><tr><td><p>Linux(如 Ubuntu)</p></td><td><p>官方一键脚本或 apt 源安装</p></td><td><p>装完记得执行 sudo usermod -aG docker $USER 把当前用户加入 docker 组,免 sudo</p></td></tr></tbody></table>
+<p>装完后打开终端,运行下面两条命令验证:</p>
+<pre lang="bash"><code># 能打印出版本号,说明 Docker 已安装
+docker --version
+
+# 能拉取并运行官方测试镜像,说明 Docker 工作正常
+docker run hello-world</code></pre>
+<callout emoji="✅" background-color="light-green"><p>验证成功标志:hello-world 输出一大段以 "Hello from Docker!" 开头的文字。如果 Linux 报权限错误 permission denied,多半是还没把用户加进 docker 组,加完后重新登录终端即可。</p></callout>
+<h2 seq="auto">快速上手:你的第一个容器</h2>
+<h3 seq="auto">docker run hello-world 背后发生了什么</h3>
+<p>刚才那条命令看似简单,Docker 其实替你做了 6 件事,理解这 6 步就理解了 Docker 的基本工作方式:</p>
+<ol><li>在<b>本地</b>查找名为 hello-world 的镜像</li><li>本地没有 → 自动去默认仓库 Docker Hub <b>拉取</b>该镜像</li><li>用镜像<b>创建</b>一个新容器</li><li><b>启动</b>容器,执行里面预设的程序</li><li>程序打印出那段欢迎文字</li><li>程序结束,容器<b>退出</b>(容器还在,只是停止运行了)</li></ol>
+<h3 seq="auto">实战:跑一个 Nginx 网站</h3>
+<p>Nginx 是一个网站服务器。下面这条命令,一行就能在你电脑上跑起一个网站:</p>
+<pre lang="bash"><code>docker run -d -p 8080:80 --name my-web nginx</code></pre>
+<p>逐个参数拆解(这是全书最重要的一条命令,务必看懂):</p>
+<table><thead><tr><th background-color="light-gray"><p>参数</p></th><th background-color="light-gray"><p>含义</p></th></tr></thead><tbody><tr><td><p>-d</p></td><td><p>后台运行(detached),不占用当前终端</p></td></tr><tr><td><p>-p 8080:80</p></td><td><p>端口映射:把你电脑的 8080 端口 → 容器里的 80 端口(网站默认端口)</p></td></tr><tr><td><p>--name my-web</p></td><td><p>给容器起个好记的名字,方便后面管理</p></td></tr><tr><td><p>nginx</p></td><td><p>使用哪个镜像(本地没有会自动从 Docker Hub 拉取)</p></td></tr></tbody></table>
+<p>验证:打开浏览器访问 <a type="url-preview" href="http://localhost:8080">http://localhost:8080</a>,看到 "Welcome to nginx!" 就成功了。也可以在终端用 docker ps 确认容器正在运行。玩够了就清理掉:</p>
+<pre lang="bash"><code>docker stop my-web   # 停止容器
+docker rm my-web     # 删除容器</code></pre>
+<h3 seq="auto">新手必会的 10 个命令</h3>
+<table><thead><tr><th background-color="light-gray"><p>命令</p></th><th background-color="light-gray"><p>作用</p></th><th background-color="light-gray"><p>例子</p></th></tr></thead><tbody><tr><td><p>docker run</p></td><td><p>创建并启动一个容器</p></td><td><p>docker run -d -p 8080:80 nginx</p></td></tr><tr><td><p>docker ps</p></td><td><p>查看<b>运行中</b>的容器(加 -a 看全部)</p></td><td><p>docker ps -a</p></td></tr><tr><td><p>docker stop / start</p></td><td><p>停止 / 重新启动容器</p></td><td><p>docker stop my-web</p></td></tr><tr><td><p>docker rm</p></td><td><p>删除容器(先 stop 再 rm)</p></td><td><p>docker rm my-web</p></td></tr><tr><td><p>docker images</p></td><td><p>查看本地已有镜像</p></td><td><p>docker images</p></td></tr><tr><td><p>docker pull</p></td><td><p>只下载镜像,不运行</p></td><td><p>docker pull mysql:8.0</p></td></tr><tr><td><p>docker rmi</p></td><td><p>删除本地镜像</p></td><td><p>docker rmi nginx</p></td></tr><tr><td><p>docker exec -it</p></td><td><p>进入运行中的容器开一个终端</p></td><td><p>docker exec -it my-web sh</p></td></tr><tr><td><p>docker logs</p></td><td><p>查看容器日志(-f 持续跟踪)</p></td><td><p>docker logs -f my-web</p></td></tr><tr><td><p>docker build</p></td><td><p>用 Dockerfile 构建镜像</p></td><td><p>docker build -t myapp:1.0 .</p></td></tr></tbody></table>
+<h2 seq="auto">镜像(Image):应用的"安装包"</h2>
+<h3 seq="auto">镜像分层:又快又省的秘密</h3>
+<p>镜像不是一整块文件,而是<b>一层一层叠起来的</b>:每条构建指令产生一个只读层,下载或构建时,本地已有的层可以直接复用,不用重复下载。容器启动时,只是在所有只读层之上再加一层很薄的"可写层":</p>
+<whiteboard type="mermaid">flowchart TB
+    L0["容器层 可写:容器运行时产生的改动都在这里,删容器即删此层"]
+    L1["镜像层 3:COPY 应用代码 只读"]
+    L2["镜像层 2:RUN 安装依赖 只读"]
+    L3["镜像层 1:FROM 基础镜像 只读"]
+    L0 --- L1
+    L1 --- L2
+    L2 --- L3
+</whiteboard>
+<callout emoji="💡" background-color="light-yellow"><p>实用推论:构建镜像有<b>缓存</b>——没变化的层会直接复用上次构建结果。所以写 Dockerfile 时,<b>把不常变动的指令(装依赖)放前面,经常变动的指令(拷代码)放后面</b>,构建会快很多。</p></callout>
+<h3 seq="auto">镜像的日常操作</h3>
+<table><thead><tr><th background-color="light-gray"><p>命令</p></th><th background-color="light-gray"><p>作用</p></th></tr></thead><tbody><tr><td><p>docker pull ubuntu:22.04</p></td><td><p>下载镜像;不写标签默认拉 latest</p></td></tr><tr><td><p>docker images</p></td><td><p>列出本地镜像,能看到每个镜像的大小</p></td></tr><tr><td><p>docker rmi 镜像名</p></td><td><p>删除本地镜像(有容器在用时会拒绝,先删容器)</p></td></tr><tr><td><p>docker tag 旧名 新名</p></td><td><p>给镜像打个新标签,镜像内容不变(常用于推送前改名)</p></td></tr><tr><td><p>docker history 镜像名</p></td><td><p>查看镜像每一层是哪条指令构建出来的</p></td></tr></tbody></table>
+<h3 seq="auto">Dockerfile:自己写"菜谱"做镜像</h3>
+<p>Dockerfile 就是一个纯文本文件,逐条写着"怎么把环境搭出来"——像菜谱一样,任何人拿到它都能做出一模一样的镜像。常用指令如下:</p>
+<table><thead><tr><th background-color="light-gray"><p>指令</p></th><th background-color="light-gray"><p>作用</p></th><th background-color="light-gray"><p>备注</p></th></tr></thead><tbody><tr><td><p>FROM</p></td><td><p>指定基础镜像</p></td><td><p>必须是第一条指令</p></td></tr><tr><td><p>WORKDIR</p></td><td><p>设置工作目录</p></td><td><p>后续命令都在这个目录下执行</p></td></tr><tr><td><p>COPY</p></td><td><p>把本机文件拷进镜像</p></td><td><p>日常优先用 COPY;ADD 功能多但不直观</p></td></tr><tr><td><p>RUN</p></td><td><p>构建时执行命令</p></td><td><p>装依赖、编译都在这里</p></td></tr><tr><td><p>ENV</p></td><td><p>设置环境变量</p></td><td><p>容器运行时也能读到</p></td></tr><tr><td><p>EXPOSE</p></td><td><p>声明容器监听的端口</p></td><td><p>只是"说明书",真正映射靠 docker run -p</p></td></tr><tr><td><p>CMD</p></td><td><p>容器启动时默认执行的命令</p></td><td><p>会被 docker run 后面跟的命令覆盖</p></td></tr><tr><td><p>ENTRYPOINT</p></td><td><p>固定不变的入口命令</p></td><td><p>与 CMD 搭配:ENTRYPOINT 定程序,CMD 定默认参数</p></td></tr></tbody></table>
+<p>下面是一个把 Python(Flask)小网站打包成镜像的完整 Dockerfile,注释写清了每一行:</p>
+<pre lang="dockerfile"><code># 1. 选基础镜像:相当于选"毛坯房",自带 Python 环境
+FROM python:3.12-slim
+
+# 2. 设置工作目录
+WORKDIR /app
+
+# 3. 先只拷贝依赖清单(利用分层缓存:依赖没变就不用重装)
+COPY requirements.txt .
+
+# 4. 安装依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. 再拷贝全部应用代码(代码常变,放最后)
+COPY . .
+
+# 6. 声明容器对外端口(说明性质)
+EXPOSE 5000
+
+# 7. 容器启动命令
+CMD ["python", "app.py"]</code></pre>
+<p>同目录下只需要再有两个文件:requirements.txt 里写一行 flask;app.py 里是一个监听 5000 端口的 Flask 例子(打印 Hello Docker 即可)。</p>
+<h3 seq="auto">构建、运行、分享给别人</h3>
+<pre lang="bash"><code># 1. 在 Dockerfile 所在目录构建,-t 给镜像起名:标签
+docker build -t myapp:1.0 .
+
+# 2. 本地跑起来验证
+docker run -d -p 5000:5000 --name myapp myapp:1.0
+# 浏览器访问 http://localhost:5000 验证
+
+# 3. 推送到 Docker Hub 分享(需先注册 Docker Hub 账号)
+docker login
+docker tag myapp:1.0 你的用户名/myapp:1.0
+docker push 你的用户名/myapp:1.0</code></pre>
+<callout emoji="📦" background-color="light-purple"><p>提示:在 Dockerfile 同目录放一个 .dockerignore 文件(写法类似 .gitignore),把 node_modules、.git 之类无关目录排除掉,镜像会更小、构建更快。</p></callout>
+<h2 seq="auto">容器(Container)管理进阶</h2>
+<h3 seq="auto">容器的生命周期</h3>
+<p>容器从生到死只有几个状态,记住这张图就够了:</p>
+<whiteboard type="mermaid">flowchart LR
+    CR["Created 已创建"] --&gt;|docker start| RN["Running 运行中"]
+    RN --&gt;|docker stop| ST["Stopped 已停止"]
+    ST --&gt;|docker start| RN
+    RN --&gt;|docker pause| PA["Paused 已暂停"]
+    PA --&gt;|docker unpause| RN
+    ST --&gt;|docker rm| DEL["Deleted 已删除"]
+    CR --&gt;|docker rm| DEL
+</whiteboard>
+<p>注意区分:<b>stop 只是停止</b>(容器还在,docker ps -a 能看到,还能 start 回来);<b>rm 才是删除</b>(连同可写层一起没了)。</p>
+<h3 seq="auto">进入容器与排查问题</h3>
+<pre lang="bash"><code># 进入正在运行的容器,开一个交互终端
+docker exec -it my-web bash
+# 如果镜像里没有 bash(精简镜像常见),改用 sh
+docker exec -it my-web sh
+
+# 实时跟踪日志,只看最后 100 行
+docker logs -f --tail 100 my-web
+
+# 查看容器全部细节(IP 地址、挂载、环境变量等)
+docker inspect my-web
+
+# 实时查看各容器的 CPU / 内存占用
+docker stats</code></pre>
+<h3 seq="auto">资源限制与自动重启</h3>
+<p>默认情况下容器可以吃掉整台机器的 CPU 和内存,生产环境建议设上限;同时可以给容器配"挂了自动拉起"的策略:</p>
+<pre lang="bash"><code>docker run -d --name limited \
+  --memory=512m \
+  --cpus="1.5" \
+  --restart=always \
+  nginx</code></pre>
+<table><thead><tr><th background-color="light-gray"><p>--restart 策略</p></th><th background-color="light-gray"><p>含义</p></th><th background-color="light-gray"><p>适用</p></th></tr></thead><tbody><tr><td><p>no(默认)</p></td><td><p>退出后不自动重启</p></td><td><p>一次性任务</p></td></tr><tr><td><p>always</p></td><td><p>总是重启;机器重启后也会自动拉起</p></td><td><p>常驻服务</p></td></tr><tr><td><p>unless-stopped</p></td><td><p>类似 always,但你手动 stop 过的不会自启</p></td><td><p>常驻服务(更常用)</p></td></tr><tr><td><p>on-failure</p></td><td><p>只有异常退出(非 0 状态码)才重启</p></td><td><p>任务型容器</p></td></tr></tbody></table>
+<h2 seq="auto">数据持久化:别让数据随容器消失</h2>
+<p>回忆镜像分层那张图:容器运行时的所有写入都发生在最顶层的"可写层",<b>docker rm 一执行,这一层连同数据一起删除</b>。所以如果容器里跑的是数据库,容器一删,数据全没——解决办法是把数据"挂"到容器外面。</p>
+<h3 seq="auto">三种数据挂载方式</h3>
+<table><thead><tr><th background-color="light-gray"><p>方式</p></th><th background-color="light-gray"><p>数据存在哪</p></th><th background-color="light-gray"><p>适合场景</p></th></tr></thead><tbody><tr><td><p>数据卷 Volume<br/>-v 卷名:/容器路径</p></td><td><p>Docker 统一管理的目录</p></td><td><p>数据库等正式数据,<b>新手首选</b></p></td></tr><tr><td><p>绑定挂载 Bind Mount<br/>-v /宿主机目录:/容器路径</p></td><td><p>你指定的宿主机目录</p></td><td><p>开发时把源代码挂进容器,改代码即时生效</p></td></tr><tr><td><p>tmpfs<br/>--tmpfs /容器路径</p></td><td><p>内存,不落盘</p></td><td><p>临时、敏感的数据</p></td></tr></tbody></table>
+<h3 seq="auto">实战:给 MySQL 配上数据卷</h3>
+<pre lang="bash"><code># 1. 创建一个数据卷
+docker volume create mysql-data
+
+# 2. 启动 MySQL,把数据目录挂到卷上
+docker run -d --name mysql-demo \
+  -e MYSQL_ROOT_PASSWORD=123456 \
+  -v mysql-data:/var/lib/mysql \
+  mysql:8.0
+
+# 3. 进去建库建表,造一条数据
+docker exec -it mysql-demo mysql -uroot -p123456
+# 进入 mysql 后依次执行:
+#   CREATE DATABASE demo;
+#   USE demo;
+#   CREATE TABLE t1(id INT);
+#   INSERT INTO t1 VALUES(1);
+#   exit
+
+# 4. 狠心删掉容器(模拟"容器没了")
+docker rm -f mysql-demo
+
+# 5. 用同一个卷启动一个新容器
+docker run -d --name mysql-demo2 \
+  -e MYSQL_ROOT_PASSWORD=123456 \
+  -v mysql-data:/var/lib/mysql \
+  mysql:8.0
+
+# 6. 查一下:数据还在!
+docker exec -it mysql-demo2 mysql -uroot -p123456 -e "SELECT * FROM demo.t1;"</code></pre>
+<callout emoji="✅" background-color="light-green"><p>验证成功标志:第 6 步能查出你插入的那条 1。这就是"数据跟着卷走,不跟容器走"。</p></callout>
+<callout emoji="⚠️" background-color="light-red"><p>注意:数据卷 ≠ 备份。误删卷、磁盘坏了数据照样丢,生产数据库仍需定期备份。</p></callout>
+<h2 seq="auto">容器网络:让容器互相找到对方</h2>
+<h3 seq="auto">三种常用网络模式</h3>
+<table><thead><tr><th background-color="light-gray"><p>模式</p></th><th background-color="light-gray"><p>特点</p></th><th background-color="light-gray"><p>适用</p></th></tr></thead><tbody><tr><td><p>bridge(默认)</p></td><td><p>容器有独立 IP,通过宿主机 NAT 访问外网</p></td><td><p>绝大多数场景</p></td></tr><tr><td><p>host</p></td><td><p>容器直接共用宿主机网络,没有隔离</p></td><td><p>对网络性能要求极高的场景</p></td></tr><tr><td><p>none</p></td><td><p>完全没有网络</p></td><td><p>完全隔离的批处理任务</p></td></tr></tbody></table>
+<h3 seq="auto">端口映射:-p 到底做了什么</h3>
+<p>bridge 模式下,容器的 IP 只在 Docker 内部网络有效,你的浏览器直接访问不到。<b>-p 8080:80 的意思是:把宿主机的 8080 端口,转发到容器的 80 端口</b>——所以访问 localhost:8080 等价于访问容器里的网站。冒号前是"你的电脑",冒号后是"容器"。</p>
+<h3 seq="auto">实战:两个容器用"名字"互相访问</h3>
+<p>同一个自定义网络里的容器,可以直接用<b>容器名</b>当域名互相访问(Docker 内置了 DNS),不用记 IP:</p>
+<pre lang="bash"><code># 1. 创建一个自定义网络
+docker network create mynet
+
+# 2. 启动两个容器,都加入 mynet
+docker run -d --name web --network mynet nginx
+docker run -d --name toolbox --network mynet busybox sleep 3600
+
+# 3. 在 toolbox 容器里,直接用名字访问 web
+docker exec -it toolbox ping -c 3 web
+docker exec -it toolbox wget -qO- web</code></pre>
+<callout emoji="✅" background-color="light-green"><p>验证成功标志:ping 能通,且 wget 打印出 nginx 的欢迎页 HTML。这就是微服务之间互相调用的最朴素形态。</p></callout>
+<h2 seq="auto">Docker Compose:一键管理多容器</h2>
+<h3 seq="auto">为什么需要 Compose</h3>
+<p>一个真实项目往往要同时跑好几个容器:网站 + 数据库 + 缓存……用 docker run 一个个敲,参数又臭又长还容易漏。<b>Docker Compose 让你用一个 YAML 文件描述整套环境,一条命令全部拉起</b>。</p>
+<h3 seq="auto">实战:一条命令拉起 WordPress + MySQL</h3>
+<p>新建一个目录,在里面创建 compose.yaml 文件,内容如下:</p>
+<pre lang="yaml"><code>services:
+  wordpress:                      # 服务 1:网站
+    image: wordpress:latest
+    ports:
+      - "8080:80"                 # 和 docker run -p 一个意思
+    environment:                  # 和 docker run -e 一个意思
+      WORDPRESS_DB_HOST: db:3306  # 注意:直接用服务名 db 当数据库地址
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppass
+      WORDPRESS_DB_NAME: wordpress
+    depends_on:
+      - db                        # 等 db 先启动
+  db:                             # 服务 2:数据库
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wppass
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db_data:/var/lib/mysql    # 数据持久化
+volumes:
+  db_data:                        # 声明要用到的数据卷</code></pre>
+<p>然后在同一目录执行:</p>
+<pre lang="bash"><code>docker compose up -d      # 一键创建并启动全部服务
+docker compose ps         # 查看两个服务的状态
+docker compose logs -f    # 跟踪全部日志</code></pre>
+<callout emoji="✅" background-color="light-green"><p>验证成功标志:浏览器打开 http://localhost:8080,能看到 WordPress 的安装向导。玩完用 docker compose down 一键拆除(数据卷默认保留,加 -v 才会连数据一起删)。</p></callout>
+<h3 seq="auto">Compose 常用命令</h3>
+<table><thead><tr><th background-color="light-gray"><p>命令</p></th><th background-color="light-gray"><p>作用</p></th></tr></thead><tbody><tr><td><p>docker compose up -d</p></td><td><p>创建并后台启动全部服务</p></td></tr><tr><td><p>docker compose ps</p></td><td><p>查看各服务状态</p></td></tr><tr><td><p>docker compose logs -f</p></td><td><p>跟踪所有服务的日志</p></td></tr><tr><td><p>docker compose stop / start</p></td><td><p>停止 / 启动整套环境</p></td></tr><tr><td><p>docker compose down</p></td><td><p>停止并删除容器和网络(数据卷默认保留)</p></td></tr><tr><td><p>docker compose up -d --build</p></td><td><p>改了 Dockerfile 后,重新构建再启动</p></td></tr></tbody></table>
+<h1 seq="auto">第二部分:Kubernetes(K8s)篇</h1>
+<h2 seq="auto">为什么需要 K8s:从"养宠物"到"放牛"</h2>
+<h3 seq="auto">单机 Docker 的四个痛点</h3>
+<p>单机 Docker 像养宠物:每一只都精心照顾。可当容器从几个变成几百个、机器从 1 台变成 50 台,问题就来了:</p>
+<ol><li><b>没人值守</b>:半夜容器挂了,谁把它拉起来?</li><li><b>放哪台</b>:新容器部署到哪台还有空闲资源的机器上?</li><li><b>扩不动</b>:流量涨了 10 倍,手动一台台加容器?</li><li><b>更新怕挂</b>:发布新版本,停机更新用户骂,不停机怎么换?</li></ol>
+<h3 seq="auto">K8s 帮你做的五件事</h3>
+<p>Kubernetes(简称 K8s)就是为解决这些问题而生的"容器编排系统"——你只管声明"我要 3 个副本、永远在线",剩下它全包:</p>
+<ol><li><b>自动调度</b>:自动挑一台资源够的机器放容器</li><li><b>自愈</b>:容器挂了自动重启,机器坏了自动把容器挪到别的机器</li><li><b>弹性伸缩</b>:一条命令把 3 个副本变 30 个</li><li><b>服务发现与负载均衡</b>:自动给容器分组发流量,不用手改配置</li><li><b>滚动更新与回滚</b>:逐个替换旧版本,出问题一键回到上一版</li></ol>
+<callout emoji="⚓" background-color="light-blue"><p>冷知识:Kubernetes 是希腊语"舵手/领航员";缩写 K8s 是因为 K 和 s 之间有 8 个字母。</p></callout>
+<h2 seq="auto">K8s 集群架构:先看全景</h2>
+<p>一个 K8s 集群分两大部分:<b>控制平面</b>(大脑,做决策)和<b>工作节点</b>(干活的机器)。你通过 kubectl 下达的一切命令,都先交给控制平面:</p>
+<whiteboard type="mermaid">flowchart TB
+    USER["你 kubectl 命令行"] --&gt; API
+    subgraph CP["控制平面 Control Plane 集群大脑"]
+        API["kube-apiserver 集群唯一入口"]
+        ETCD["etcd 集群数据账本"]
+        SCH["kube-scheduler 调度员"]
+        CCM["kube-controller-manager 巡检管家"]
+        API --- ETCD
+    end
+    subgraph N1["工作节点 Node 1"]
+        K1["kubelet 节点管家"]
+        P1["kube-proxy 网络交警"]
+        D1["Pod 你的应用"]
+    end
+    subgraph N2["工作节点 Node 2"]
+        K2["kubelet 节点管家"]
+        P2["kube-proxy 网络交警"]
+        D2["Pod 你的应用"]
+    end
+    API --&gt; K1
+    API --&gt; K2
+</whiteboard>
+<table><thead><tr><th background-color="light-gray"><p>组件</p></th><th background-color="light-gray"><p>属于</p></th><th background-color="light-gray"><p>职责</p></th><th background-color="light-gray"><p>类比</p></th></tr></thead><tbody><tr><td><p>kube-apiserver</p></td><td><p>控制平面</p></td><td><p>集群唯一入口,所有请求都经过它</p></td><td><p>前台接待</p></td></tr><tr><td><p>etcd</p></td><td><p>控制平面</p></td><td><p>保存集群全部数据的键值数据库</p></td><td><p>台账本</p></td></tr><tr><td><p>kube-scheduler</p></td><td><p>控制平面</p></td><td><p>决定新 Pod 分配到哪台节点</p></td><td><p>调度员</p></td></tr><tr><td><p>kube-controller-manager</p></td><td><p>控制平面</p></td><td><p>持续巡检,让实际状态回到期望状态</p></td><td><p>巡检管家</p></td></tr><tr><td><p>kubelet</p></td><td><p>每个工作节点</p></td><td><p>管理本节点上的 Pod 和容器</p></td><td><p>车间主任</p></td></tr><tr><td><p>kube-proxy</p></td><td><p>每个工作节点</p></td><td><p>维护网络规则,转发 Service 流量</p></td><td><p>网络交警</p></td></tr><tr><td><p>容器运行时</p></td><td><p>每个工作节点</p></td><td><p>真正负责跑容器的软件(如 containerd)</p></td><td><p>发动机</p></td></tr></tbody></table>
+<callout emoji="💡" background-color="light-yellow"><p>新手只需先记住一句话:<b>kubectl 的一切请求都先找 API Server</b>,其它组件都是围着它转的。</p></callout>
+<h2 seq="auto">核心概念:Pod、Deployment、Service</h2>
+<h3 seq="auto">Pod:最小调度单位</h3>
+<p>K8s 不直接管理容器,而是把容器装进一个叫 <b>Pod</b>(豆荚)的"包装盒"里再管理。一个 Pod 可以装一个或多个容器,同一 Pod 里的容器共享网络和存储。</p>
+<callout emoji="💡" background-color="light-yellow"><p>新手记法:99% 的场景是"一个 Pod 装一个容器",所以入门阶段可以直接把 Pod 理解成"容器的外包装"。</p></callout>
+<h3 seq="auto">Deployment 与 ReplicaSet:让应用永远在线</h3>
+<p>你几乎不会单独创建 Pod,而是创建 <b>Deployment</b>:告诉 K8s"用哪个镜像、要几个副本"。Deployment 会带出 <b>ReplicaSet</b>,专职保证"活着的 Pod 数量"永远等于你要的数量——挂了立刻补一个新的。</p>
+<h3 seq="auto">Service:给 Pod 一个固定入口</h3>
+<p>Pod 会被销毁重建,IP 每次都变,所以不能直接拿 Pod 的 IP 当地址用。<b>Service 给一组 Pod 提供一个固定不变的入口地址,并自动做负载均衡</b>。三种常见类型:</p>
+<table><thead><tr><th background-color="light-gray"><p>类型</p></th><th background-color="light-gray"><p>暴露范围</p></th><th background-color="light-gray"><p>典型用途</p></th></tr></thead><tbody><tr><td><p>ClusterIP(默认)</p></td><td><p>仅集群内部可访问</p></td><td><p>服务之间互相调用</p></td></tr><tr><td><p>NodePort</p></td><td><p>每个节点开一个 30000-32767 区间的端口</p></td><td><p>本地测试、简单对外</p></td></tr><tr><td><p>LoadBalancer</p></td><td><p>向云厂商申请负载均衡器和公网 IP</p></td><td><p>生产环境对外服务</p></td></tr></tbody></table>
+<h3 seq="auto">一张图看懂四者的关系</h3>
+<whiteboard type="mermaid">flowchart TB
+    D["Deployment 声明期望状态:几个副本 什么版本"] --&gt; RS["ReplicaSet 保证副本数量"]
+    RS -. 创建与管理 .-&gt; P1
+    RS -. 创建与管理 .-&gt; P2
+    RS -. 创建与管理 .-&gt; P3
+    U["用户流量"] --&gt; SVC
+    SVC["Service 固定入口加负载均衡"] --&gt; P1["Pod 里面跑容器"]
+    SVC --&gt; P2["Pod 里面跑容器"]
+    SVC --&gt; P3["Pod 里面跑容器"]
+</whiteboard>
+<h3 seq="auto">其他常用对象速览</h3>
+<table><thead><tr><th background-color="light-gray"><p>对象</p></th><th background-color="light-gray"><p>一句话作用</p></th></tr></thead><tbody><tr><td><p>Namespace</p></td><td><p>把集群资源分组隔离,比如 dev / test / prod 三套环境共用一个集群</p></td></tr><tr><td><p>ConfigMap</p></td><td><p>存放普通配置(键值对),和镜像解耦</p></td></tr><tr><td><p>Secret</p></td><td><p>存放密码、密钥等敏感配置</p></td></tr><tr><td><p>Ingress</p></td><td><p>集群统一入口,按域名 / 路径把流量转发给不同 Service</p></td></tr><tr><td><p>PV / PVC</p></td><td><p>PV 是集群里的存储资源;PVC 是应用递交的"存储申请单"</p></td></tr></tbody></table>
+<h2 seq="auto">搭建本地练习环境</h2>
+<p>学 K8s 不需要买服务器,在自己电脑上就能搭一个单节点集群,三种主流方案任选其一:</p>
+<table><thead><tr><th background-color="light-gray"><p>方案</p></th><th background-color="light-gray"><p>特点</p></th><th background-color="light-gray"><p>适合谁</p></th></tr></thead><tbody><tr><td><p>Docker Desktop 自带 K8s</p></td><td><p>设置里勾选 Enable Kubernetes 即可,最省事</p></td><td><p>Mac / Windows 新手首选</p></td></tr><tr><td><p>minikube</p></td><td><p>经典方案,功能完整,插件多</p></td><td><p>想体验更完整的 K8s 功能</p></td></tr><tr><td><p>kind</p></td><td><p>用 Docker 容器跑 K8s 节点,轻量快速</p></td><td><p>已有 Docker、想模拟多节点集群</p></td></tr></tbody></table>
+<p>另外还需要安装 K8s 的命令行工具 kubectl(三个方案的文档里都有对应安装说明)。装好后验证:</p>
+<pre lang="bash"><code># 1. 确认 kubectl 装好了
+kubectl version --client
+
+# 2. 确认能连上集群
+kubectl cluster-info
+
+# 3. 看节点,状态是 Ready 就说明环境就绪
+kubectl get nodes</code></pre>
+<h2 seq="auto">实战:把 Nginx 部署到 K8s</h2>
+<h3 seq="auto">方式一:命令快速体验</h3>
+<pre lang="bash"><code># 1. 创建一个 Deployment
+kubectl create deployment web --image=nginx
+
+# 2. 给它配一个 Service(NodePort 类型,方便本机访问)
+kubectl expose deployment web --port=80 --type=NodePort
+
+# 3. 查看 Pod 和 Service,STATUS 为 Running 即成功
+kubectl get pods
+kubectl get svc
+
+# 4. 访问它(二选一)
+kubectl port-forward svc/web 8080:80   # 通用方式,然后浏览器开 http://localhost:8080
+minikube service web                   # minikube 用户专享,自动打开浏览器
+
+# 5. 体验完清理
+kubectl delete svc web
+kubectl delete deployment web</code></pre>
+<h3 seq="auto">方式二:YAML 声明式(推荐)</h3>
+<p>实际工作中都用 YAML 文件描述资源,然后用 kubectl apply 提交——好处是<b>可保存、可复现、可放进 Git 版本管理</b>。这就是 K8s 的"声明式"思想:你写"想要什么样",K8s 负责做到。</p>
+<p>deployment.yaml(注释版,四个顶级字段是万能套路:apiVersion / kind / metadata / spec):</p>
+<pre lang="yaml"><code>apiVersion: apps/v1        # 用哪个 API 版本
+kind: Deployment           # 资源类型
+metadata:
+  name: web                # 这个 Deployment 的名字
+spec:
+  replicas: 3              # 期望 3 个副本
+  selector:
+    matchLabels:
+      app: web             # 管理所有带 app=web 标签的 Pod
+  template:                # Pod 模板:照这个样子创建 Pod
+    metadata:
+      labels:
+        app: web           # 给 Pod 贴标签,和上面的 selector 对应
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80</code></pre>
+<p>service.yaml:</p>
+<pre lang="yaml"><code>apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  type: NodePort           # 本机练习用 NodePort
+  selector:
+    app: web               # 把流量转给带 app=web 标签的 Pod
+  ports:
+    - port: 80             # Service 自己的端口
+      targetPort: 80       # 转发到 Pod 的哪个端口
+      nodePort: 30080      # 节点上开的端口,浏览器访问用</code></pre>
+<pre lang="bash"><code># 提交两个文件,-f 后面跟文件名
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+
+# 查看,3 个 Pod 都 Running 即成功
+kubectl get pods
+kubectl get svc</code></pre>
+<callout emoji="✅" background-color="light-green"><p>验证成功标志:Docker Desktop / kind 用户浏览器访问 http://localhost:30080 能看到 nginx 欢迎页;minikube 用户执行 minikube service web。</p></callout>
+<h3 seq="auto">实验一:一键扩容到 5 个副本</h3>
+<pre lang="bash"><code>kubectl scale deployment web --replicas=5
+kubectl get pods    # 再看:5 个 Pod</code></pre>
+<h3 seq="auto">实验二:自愈测试——亲手删掉一个 Pod</h3>
+<pre lang="bash"><code>kubectl get pods                 # 先记下任意一个 Pod 的名字
+kubectl delete pod web-xxxx-yyyy # 删掉它!(换成你实际的名字)
+kubectl get pods                 # 立刻再看:数量不变,新 Pod 正在创建</code></pre>
+<p>注意新 Pod 的 AGE 明显比其他的小——这就是自愈:ReplicaSet 发现数量不够,自动补齐。想真正删掉应用,要删 Deployment 而不是 Pod。</p>
+<h3 seq="auto">实验三:滚动更新与一键回滚</h3>
+<p>K8s 更新应用时不停机:先拉起新版本 Pod,健康后再下掉旧的,逐个替换:</p>
+<whiteboard type="mermaid">flowchart LR
+    A["发布新版本 v2"] --&gt; B["先新建 1 个 v2 的 Pod"]
+    B --&gt; C{"健康检查通过了吗"}
+    C --&gt;|通过| D["再下线 1 个旧的 v1 Pod"]
+    C --&gt;|没通过| X["暂停更新 旧版本不受影响"]
+    D --&gt; E{"全部替换完成了吗"}
+    E --&gt;|还没有| B
+    E --&gt;|完成了| F["更新完成 出问题可一键回滚"]
+</whiteboard>
+<pre lang="bash"><code># 把镜像更新为 nginx:1.27(触发滚动更新)
+kubectl set image deployment/web nginx=nginx:1.27
+
+# 观察更新进度
+kubectl rollout status deployment/web
+
+# 查看历史版本
+kubectl rollout history deployment/web
+
+# 发现新版本有问题?一键回到上一版
+kubectl rollout undo deployment/web</code></pre>
+<h2 seq="auto">kubectl 命令速查表</h2>
+<table><thead><tr><th background-color="light-gray"><p>分类</p></th><th background-color="light-gray"><p>命令</p></th><th background-color="light-gray"><p>说明</p></th></tr></thead><tbody><tr><td><p>查看</p></td><td><p>kubectl get pods</p></td><td><p>看 Pod;加 -A 看所有命名空间,加 -o wide 看多列信息</p></td></tr><tr><td><p>查看</p></td><td><p>kubectl get svc / deploy</p></td><td><p>看 Service / Deployment</p></td></tr><tr><td><p>查看</p></td><td><p>kubectl describe pod 名字</p></td><td><p>看详情和事件(排错关键,必会)</p></td></tr><tr><td><p>操作</p></td><td><p>kubectl apply -f xxx.yaml</p></td><td><p>应用配置:不存在则创建,存在则更新</p></td></tr><tr><td><p>操作</p></td><td><p>kubectl delete -f xxx.yaml</p></td><td><p>按配置文件删除资源</p></td></tr><tr><td><p>操作</p></td><td><p>kubectl scale deployment web --replicas=5</p></td><td><p>扩缩容</p></td></tr><tr><td><p>操作</p></td><td><p>kubectl set image deployment/web nginx=nginx:1.27</p></td><td><p>更新镜像,触发滚动更新</p></td></tr><tr><td><p>操作</p></td><td><p>kubectl rollout status / undo deployment/web</p></td><td><p>查看发布进度 / 回滚</p></td></tr><tr><td><p>调试</p></td><td><p>kubectl logs Pod名</p></td><td><p>看日志;-f 跟踪,--previous 看上一次崩溃的日志</p></td></tr><tr><td><p>调试</p></td><td><p>kubectl exec -it Pod名 -- sh</p></td><td><p>进入容器终端(注意中间的 --)</p></td></tr><tr><td><p>调试</p></td><td><p>kubectl port-forward svc/web 8080:80</p></td><td><p>把服务映射到本机端口访问</p></td></tr><tr><td><p>查询</p></td><td><p>kubectl explain deployment.spec</p></td><td><p>查任意字段的含义,相当于内置文档</p></td></tr></tbody></table>
+<h2 seq="auto">新手排错三板斧</h2>
+<h3 seq="auto">三板斧:get → describe → logs</h3>
+<p>Pod 不正常时,按固定顺序查,90% 的新手问题都能定位:</p>
+<pre lang="bash"><code># 第一板斧:看状态——哪个 Pod 不正常
+kubectl get pods
+
+# 第二板斧:看事件——为什么调度不上 / 镜像拉不下来
+kubectl describe pod web-xxxx-yyyy    # 重点看最下面的 Events
+
+# 第三板斧:看日志——应用为什么崩
+kubectl logs web-xxxx-yyyy
+kubectl logs web-xxxx-yyyy --previous  # 容器反复重启时,看"上一次"的日志</code></pre>
+<h3 seq="auto">常见 Pod 异常状态对照表</h3>
+<table><thead><tr><th background-color="light-gray"><p>状态</p></th><th background-color="light-gray"><p>含义</p></th><th background-color="light-gray"><p>排查方向</p></th></tr></thead><tbody><tr><td><p>Pending</p></td><td><p>一直排队,没被调度</p></td><td><p>describe 看 Events:多半是资源不够或没有满足条件的节点</p></td></tr><tr><td><p>ImagePullBackOff / ErrImagePull</p></td><td><p>镜像拉取失败</p></td><td><p>检查镜像名和标签拼写;私有仓库是否配了拉取凭证</p></td></tr><tr><td><p>CrashLoopBackOff</p></td><td><p>启动就崩,反复重启</p></td><td><p>logs --previous 看崩溃原因:启动命令错、配置错、依赖连不上</p></td></tr><tr><td><p>OOMKilled</p></td><td><p>内存超限被系统杀掉</p></td><td><p>调大 resources 的 memory limits,或排查内存泄漏</p></td></tr><tr><td><p>CreateContainerConfigError</p></td><td><p>配置引用有误</p></td><td><p>检查 YAML 里引用的 ConfigMap / Secret 名字是否真的存在</p></td></tr><tr><td><p>Running 但访问不通</p></td><td><p>容器活着,流量进不来</p></td><td><p>核对 Service 的 selector 与 Pod 的 label 是否一致、端口是否对应</p></td></tr></tbody></table>
+<callout emoji="⚠️" background-color="light-red"><p>排错没有万能答案,先 get 看状态、describe 看 Events,再下结论;不要一上来就猜。</p></callout>
+<h1 seq="auto">附录</h1>
+<h2 seq="auto">Docker 与 K8s 命令对照表</h2>
+<p>很多操作是相通的,对照着记更容易建立直觉:</p>
+<table><thead><tr><th background-color="light-gray"><p>我想做的事</p></th><th background-color="light-gray"><p>Docker</p></th><th background-color="light-gray"><p>Kubernetes</p></th></tr></thead><tbody><tr><td><p>运行应用</p></td><td><p>docker run -d nginx</p></td><td><p>kubectl create deployment web --image=nginx</p></td></tr><tr><td><p>查看运行中的实例</p></td><td><p>docker ps</p></td><td><p>kubectl get pods</p></td></tr><tr><td><p>查看日志</p></td><td><p>docker logs -f 容器名</p></td><td><p>kubectl logs -f Pod名</p></td></tr><tr><td><p>进入终端</p></td><td><p>docker exec -it 容器名 sh</p></td><td><p>kubectl exec -it Pod名 -- sh</p></td></tr><tr><td><p>删除实例</p></td><td><p>docker rm 容器名</p></td><td><p>kubectl delete pod Pod名</p></td></tr><tr><td><p>扩缩容</p></td><td><p>单机只能手动多开几个</p></td><td><p>kubectl scale deployment web --replicas=5</p></td></tr><tr><td><p>用文件声明整套环境</p></td><td><p>docker compose up -d</p></td><td><p>kubectl apply -f xxx.yaml</p></td></tr></tbody></table>
+<h2 seq="auto">常用术语速查</h2>
+<table><thead><tr><th background-color="light-gray"><p>术语</p></th><th background-color="light-gray"><p>一句话解释</p></th></tr></thead><tbody><tr><td><p>容器 Container</p></td><td><p>打包了应用和依赖的轻量隔离运行环境</p></td></tr><tr><td><p>镜像 Image</p></td><td><p>容器的只读模板</p></td></tr><tr><td><p>Registry</p></td><td><p>镜像仓库,如 Docker Hub</p></td></tr><tr><td><p>编排 Orchestration</p></td><td><p>自动完成大量容器的部署、扩容、自愈等管理工作</p></td></tr><tr><td><p>Pod</p></td><td><p>K8s 最小调度单位,里面跑容器</p></td></tr><tr><td><p>工作负载 Workload</p></td><td><p>Deployment、StatefulSet 这类"管 Pod"的对象的统称</p></td></tr><tr><td><p>声明式 API</p></td><td><p>你只写"想要什么样",系统负责做到并保持</p></td></tr><tr><td><p>标签 Label</p></td><td><p>贴在资源上的键值对,用于选择和分组(如 app=web)</p></td></tr><tr><td><p>控制平面 Control Plane</p></td><td><p>集群的"大脑",负责所有决策</p></td></tr><tr><td><p>kubelet</p></td><td><p>跑在每个节点上的"管家"程序</p></td></tr></tbody></table>
+<h2 seq="auto">推荐学习资源</h2>
+<ul><li><a type="url-preview" href="https://docs.docker.com/get-started/">Docker 官方文档:Getting Started</a>(新手友好,官方权威)</li><li><a type="url-preview" href="https://kubernetes.io/zh-cn/docs/home/">Kubernetes 官方中文文档</a>(概念部分的"教程"章节适合跟进)</li><li><a type="url-preview" href="https://labs.play-with-docker.com/">Play with Docker</a>(浏览器里免费练 Docker,不用安装)</li><li><a type="url-preview" href="https://killercoda.com/">Killercoda</a>(浏览器里免费练 K8s,场景式闯关)</li><li><a type="url-preview" href="https://hub.docker.com/">Docker Hub</a>(找镜像:nginx、mysql、redis 都有官方镜像)</li></ul>
+<callout emoji="📌" background-color="light-gray"><p>版本说明:本文命令按 Docker 24+ 与 Kubernetes 1.28+ 的通用写法整理(2026 年),各安装方式的界面文案可能随版本微调,以官方文档为准。</p></callout>

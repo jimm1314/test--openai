@@ -1,0 +1,9 @@
+<title>画板格式测试(可删除)</title>
+<p>转义写法:</p>
+<whiteboard type="mermaid">flowchart LR
+    A["甲"] --&gt; B["乙"]
+</whiteboard>
+<p>原始写法:</p>
+<whiteboard type="mermaid">flowchart LR
+    C["丙"] --> D["丁"]
+</whiteboard>
